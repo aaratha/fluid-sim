@@ -1,6 +1,13 @@
 #+title: Readme
 
-
+* Table of Contents
+|--------------|
+| [[Introduction][Introduction]] |
+|--------------|
+| [[Methodology][Methodology]]  |
+|--------------|
+| [[Conclusion][Conclusion]]   |
+|--------------|
 
 * Introduction
 * Methodology
