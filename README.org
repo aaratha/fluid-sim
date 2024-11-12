@@ -1,11 +1,11 @@
 
-* fluid-sim | Readme:TOC:
+* Readme | fluid-sim :TOC:
 - [[#introduction][Introduction]]
 - [[#methodology][Methodology]]
 - [[#conclusion][Conclusion]]
 
 * Introduction
-This project is based on [[https://www.youtube.com/watch?v=rSKMYc1CQHE][Sebastian Lague's "Coding Adventure"]] video on youtube.
+This project is based on [[https://www.youtube.com/watch?v=rSKMYc1CQHE][Sebastian Lague's "Coding Adventure"]] video.
 
 The video documents his investigation into fluid dynamics, and his following implementation in Unity using C#.
 

@@ -5,7 +5,8 @@
 #include "raylib-cpp.hpp"
 #include "utils.hpp"
 
-const int PARTICLE_COUNT = 100;
+const int PARTICLE_COUNT = 200;
+const float PARTICLE_RADIUS = 5.0f;
 
 int main(void) {
   // test
@@ -22,7 +23,8 @@ int main(void) {
   for (int i = 0; i < PARTICLE_COUNT; i++) {
     solver.objects.push_back(
         new PhysObj(vec2{float(GetRandomValue(0, screenWidth)),
-                         float(GetRandomValue(0, screenHeight))}));
+                         float(GetRandomValue(0, screenHeight))},
+                    PARTICLE_RADIUS));
   }
 
   bool pause = false; // Movement pause

@@ -12,7 +12,7 @@ private:
   float radius = 10;
 
 public:
-  PhysObj(vec2 pos);
+  PhysObj(vec2 pos, float radius);
 
   void updatePhysics(float dt);
   void accelerate(vec2 a);
@@ -25,6 +25,7 @@ public:
   float getRadius();
   vec2 getVelocity();
   void setPos(vec2 p);
+  void setPrev(vec2 p);
   void setTarg(vec2 t);
 };
 
