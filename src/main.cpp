@@ -5,26 +5,31 @@
 #include "raylib-cpp.hpp"
 #include "utils.hpp"
 
-const int PARTICLE_COUNT = 200;
-const float PARTICLE_RADIUS = 5.0f;
+Parameters params = {.screenWidth = 800,
+                     .screenHeight = 600,
+                     .particleCount = 200,
+                     .particleRadius = 5.0f,
+                     .collisionDamping = 0.8f,
+                     .friction = 0.98f,
+                     .gravity = vec2(0, 1000)};
 
 int main(void) {
   // test
   //  Initialization
   //---------------------------------------------------------
-  const int screenWidth = 800;
-  const int screenHeight = 600;
+  const int screenWidth = params.screenWidth;
+  const int screenHeight = params.screenHeight;
 
   rl::Window window(screenWidth, screenHeight,
                     "raylib [shapes] example - collision area");
 
   // push cards to solver
   Solver solver;
-  for (int i = 0; i < PARTICLE_COUNT; i++) {
+  for (int i = 0; i < params.particleCount; i++) {
     solver.objects.push_back(
         new PhysObj(vec2{float(GetRandomValue(0, screenWidth)),
                          float(GetRandomValue(0, screenHeight))},
-                    PARTICLE_RADIUS));
+                    params.particleRadius));
   }
 
   bool pause = false; // Movement pause
@@ -43,7 +48,7 @@ int main(void) {
 
     if (!pause) {
       float dt = GetFrameTime();
-      solver.update(dt, screenWidth, screenHeight);
+      solver.update(dt, params);
     }
 
     window.ClearBackground(BLACK);

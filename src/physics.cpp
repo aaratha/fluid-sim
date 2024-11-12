@@ -28,12 +28,12 @@ void PhysObj::setPrev(vec2 p) { prev = p; }
 
 void PhysObj::setTarg(vec2 p) { targ = p; }
 
-void Solver::update(float dt, int screenWidth, int screenHeight) {
+void Solver::update(float dt, Parameters params) {
   for (int i = 0; i < objects.size(); i++) {
     objects[i]->updatePhysics(dt);
     applyForces(i);
     updateColor(i);
-    applyCollisions(i, screenWidth, screenHeight);
+    applyCollisions(i, params);
   }
 }
 
@@ -48,14 +48,15 @@ void Solver::applyForces(int index) {
   objects[index]->accelerate(g);
 }
 
-void Solver::applyCollisions(int i, int screenWidth, int screenHeight) {
+void Solver::applyCollisions(int i, Parameters params) {
   PhysObj *obj = objects[i];
   vec2 pos = obj->getPos();
   float radius = obj->getRadius();
   vec2 vel = obj->getVelocity();
 
   // Wall collisions with bounce effect
-  const float bounceFactor = 0.8f; // Reduces velocity on bounce
+  const float bounceFactor =
+      params.collisionDamping; // Reduces velocity on bounce
   bool collided = false;
 
   // Left wall
@@ -65,8 +66,8 @@ void Solver::applyCollisions(int i, int screenWidth, int screenHeight) {
     collided = true;
   }
   // Right wall
-  else if (pos.x + radius > screenWidth) {
-    pos.x = screenWidth - radius;
+  else if (pos.x + radius > params.screenWidth) {
+    pos.x = params.screenWidth - radius;
     vel.x = -vel.x * bounceFactor;
     collided = true;
   }
@@ -78,8 +79,8 @@ void Solver::applyCollisions(int i, int screenWidth, int screenHeight) {
     collided = true;
   }
   // Bottom wall
-  else if (pos.y + radius > screenHeight) {
-    pos.y = screenHeight - radius;
+  else if (pos.y + radius > params.screenHeight) {
+    pos.y = params.screenHeight - radius;
     vel.y = -vel.y * bounceFactor;
     collided = true;
   }
