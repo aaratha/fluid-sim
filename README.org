@@ -1,4 +1,4 @@
-#+title: Readme
+#+title: fluid-sim | Readme
 
 * Table of Contents :TOC:
 - [[#introduction][Introduction]]
