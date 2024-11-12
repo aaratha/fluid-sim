@@ -28,12 +28,21 @@ void PhysObj::setTarg(vec2 p) { targ = p; }
 void Solver::update(float dt, int screenWidth, int screenHeight) {
   applyForces();
   updatePositions(dt);
+  updateColor();
   applyCollisions(screenWidth, screenHeight);
 }
 
 void Solver::updatePositions(float dt) {
   for (auto obj : objects) {
     obj->updatePhysics(dt);
+  }
+}
+
+void Solver::updateColor() {
+  for (auto obj : objects) {
+    int rg = int(Vector2Length(obj->getVelocity()));
+    obj->color = (Color){static_cast<unsigned char>(rg),
+                         static_cast<unsigned char>(rg), 255, 255};
   }
 }
 

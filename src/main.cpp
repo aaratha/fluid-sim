@@ -44,7 +44,7 @@ int main(void) {
       solver.update(dt, screenWidth, screenHeight);
     }
 
-    window.ClearBackground(RAYWHITE);
+    window.ClearBackground(BLACK);
 
     BeginDrawing();
 

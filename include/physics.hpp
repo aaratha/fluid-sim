@@ -32,6 +32,7 @@ struct Solver {
   std::vector<PhysObj *> objects;
   vec2 g = vec2(0, 1000);
   void update(float dt, int screenWidth, int screenHeight);
+  void updateColor();
   void updatePositions(float dt);
   void applyCollisions(int screenWidth, int screenHeight);
   void applyForces();
