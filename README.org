@@ -6,6 +6,10 @@
 - [[#conclusion][Conclusion]]
 
 * Introduction
+This project is based on [[https://www.youtube.com/watch?v=rSKMYc1CQHE][Sebastian Lague's "Coding Adventure "]] video on youtube.
+
+The video documents his investigation into fluid dynamics, and his following implementations in Unity using C#.
+
+This project is coded in C++, and utilizes RayLib for basic graphical interfacing.
 * Methodology
-+ test test test
 * Conclusion
