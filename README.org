@@ -1,13 +1,9 @@
 #+title: Readme
 
-* Table of Contents
-|--------------|
-| [[Introduction][Introduction]] |
-|--------------|
-| [[Methodology][Methodology]]  |
-|--------------|
-| [[Conclusion][Conclusion]]   |
-|--------------|
+* Table of Contents :TOC:
+- [[#introduction][Introduction]]
+- [[#methodology][Methodology]]
+- [[#conclusion][Conclusion]]
 
 * Introduction
 * Methodology
