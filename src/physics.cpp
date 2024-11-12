@@ -28,12 +28,15 @@ void PhysObj::setPrev(vec2 p) { prev = p; }
 
 void PhysObj::setTarg(vec2 p) { targ = p; }
 
+void PhysObj::setRadius(float r) { radius = r; }
+
 void Solver::update(float dt, Parameters params) {
   for (int i = 0; i < objects.size(); i++) {
     objects[i]->updatePhysics(dt);
-    applyForces(i);
+    applyForces(i, params);
     updateColor(i);
     applyCollisions(i, params);
+    objects[i]->setRadius(params.particleRadius);
   }
 }
 
@@ -43,9 +46,9 @@ void Solver::updateColor(int index) {
                                   static_cast<unsigned char>(rg), 255, 255};
 }
 
-void Solver::applyForces(int index) {
+void Solver::applyForces(int index, Parameters params) {
   // Apply gravity when the mouse button is not down
-  objects[index]->accelerate(g);
+  objects[index]->accelerate(params.gravity);
 }
 
 void Solver::applyCollisions(int i, Parameters params) {

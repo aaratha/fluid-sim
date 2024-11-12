@@ -27,6 +27,7 @@ public:
   void setPos(vec2 p);
   void setPrev(vec2 p);
   void setTarg(vec2 t);
+  void setRadius(float r);
 };
 
 struct Solver {
@@ -35,5 +36,5 @@ struct Solver {
   void update(float dt, Parameters params);
   void updateColor(int index);
   void applyCollisions(int i, Parameters params);
-  void applyForces(int index);
+  void applyForces(int index, Parameters params);
 };

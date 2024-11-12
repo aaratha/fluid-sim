@@ -1,13 +1,16 @@
 #include <iostream>
+#include <string>
 #include <vector>
 
 #include "physics.hpp"
+#define RAYGUI_IMPLEMENTATION
+#include "raygui.h"
 #include "raylib-cpp.hpp"
 #include "utils.hpp"
 
 Parameters params = {.screenWidth = 800,
                      .screenHeight = 600,
-                     .particleCount = 200,
+                     .particleCount = 300,
                      .particleRadius = 5.0f,
                      .collisionDamping = 0.8f,
                      .friction = 0.98f,
@@ -62,9 +65,22 @@ int main(void) {
 
     DrawFPS(10, 10);
 
-    if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
-      DrawText("Left mouse button is pressed", 100, 40, 10, RED);
-    }
+    std::string gravToString = "Grav: " + std::to_string(params.gravity.y);
+    const char *grav = gravToString.c_str();
+    GuiSliderBar((Rectangle){10, 40, 120, 20}, NULL, grav, &params.gravity.y, 1,
+                 1000);
+
+    std::string bounceToString =
+        "bounce: " + std::to_string(params.collisionDamping);
+    const char *bounce = bounceToString.c_str();
+    GuiSliderBar((Rectangle){10, 70, 120, 20}, NULL, bounce,
+                 &params.collisionDamping, 0, 1);
+
+    std::string radiusToString =
+        "radius" + std::to_string(params.particleRadius);
+    const char *radius = radiusToString.c_str();
+    GuiSliderBar((Rectangle){10, 100, 120, 20}, NULL, radius,
+                 &params.particleRadius, 0, 20);
 
     EndDrawing();
   }
