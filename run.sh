@@ -9,4 +9,4 @@ else
     cmake . -B build -G "Unix Makefiles"
 fi
 cmake --build build
-build/art-game
+build/fluid-sim

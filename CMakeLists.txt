@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.14)
-project(art-game)
+project(fluid-sim)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -61,10 +61,7 @@ include_directories(
 set(SOURCES
     src/main.cpp
     src/utils.cpp
-    src/graphics.cpp
-    src/globals.cpp
     src/physics.cpp
-    src/card.cpp
 )
 
 # Main executable target
@@ -75,9 +72,9 @@ target_link_libraries(${PROJECT_NAME} PUBLIC raylib raylib_cpp)
 
 
 # Copy resources folder to the build directory
-add_custom_command(TARGET art-game POST_BUILD
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
-    ${CMAKE_SOURCE_DIR}/resources $<TARGET_FILE_DIR:art-game>/resources)
+    ${CMAKE_SOURCE_DIR}/resources $<TARGET_FILE_DIR:${PROJECT_NAME}>/resources)
 
 
 if(APPLE)
