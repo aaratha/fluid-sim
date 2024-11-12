@@ -5,15 +5,7 @@
 #include "raylib-cpp.hpp"
 #include "utils.hpp"
 
-class Particle : public PhysObj {
-public:
-  Particle(vec2 pos) : PhysObj(pos) {
-    radius = 20;
-    color = RED;
-  }
-  float radius;
-  Color color;
-};
+const int PARTICLE_COUNT = 100;
 
 int main(void) {
   // test
@@ -25,16 +17,12 @@ int main(void) {
   rl::Window window(screenWidth, screenHeight,
                     "raylib [shapes] example - collision area");
 
-  std::vector<Particle *> particles;
-  for (int i = 0; i < 10; i++) {
-    particles.push_back(
-        new Particle(vec2{float(GetRandomValue(0, screenWidth)),
-                          float(GetRandomValue(0, screenHeight))}));
-  }
   // push cards to solver
   Solver solver;
-  for (int i = 0; i < particles.size(); i++) {
-    solver.objects.push_back(particles[i]);
+  for (int i = 0; i < PARTICLE_COUNT; i++) {
+    solver.objects.push_back(
+        new PhysObj(vec2{float(GetRandomValue(0, screenWidth)),
+                         float(GetRandomValue(0, screenHeight))}));
   }
 
   bool pause = false; // Movement pause
@@ -53,16 +41,16 @@ int main(void) {
 
     if (!pause) {
       float dt = GetFrameTime();
-      solver.update(dt);
+      solver.update(dt, screenWidth, screenHeight);
     }
 
     window.ClearBackground(RAYWHITE);
 
     BeginDrawing();
 
-    for (int i = 0; i < particles.size(); i++) {
-      DrawCircleV(particles[i]->getPos(), particles[i]->radius,
-                  particles[i]->color);
+    for (int i = 0; i < solver.objects.size(); i++) {
+      DrawCircleV(solver.objects[i]->getPos(), solver.objects[i]->getRadius(),
+                  solver.objects[i]->color);
     }
 
     DrawFPS(10, 10);

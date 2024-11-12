@@ -9,6 +9,7 @@ private:
   vec2 targ;
   vec2 acc;
   float friction = 0.98;
+  float radius = 10;
 
 public:
   PhysObj(vec2 pos);
@@ -16,9 +17,13 @@ public:
   void updatePhysics(float dt);
   void accelerate(vec2 a);
 
+  Color color = BLUE;
+
   vec2 getPos();
   vec2 getPrev();
   vec2 getTarg();
+  float getRadius();
+  vec2 getVelocity();
   void setPos(vec2 p);
   void setTarg(vec2 t);
 };
@@ -26,8 +31,8 @@ public:
 struct Solver {
   std::vector<PhysObj *> objects;
   vec2 g = vec2(0, 1000);
-  void update(float dt);
+  void update(float dt, int screenWidth, int screenHeight);
   void updatePositions(float dt);
-  void applyCollisions();
+  void applyCollisions(int screenWidth, int screenHeight);
   void applyForces();
 };
