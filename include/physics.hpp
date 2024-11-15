@@ -1,9 +1,11 @@
 #pragma once
 
 #include "utils.hpp"
+
 #include <algorithm>
 #include <iostream>
 #include <math.h>
+#include <omp.h>
 
 class PhysObj {
 private:
@@ -37,13 +39,16 @@ public:
 };
 
 struct Solver {
+  void initializeCache(size_t particleCount);
   std::vector<PhysObj *> objects;
   vec2 g = vec2(0, 1000);
+  std::vector<std::vector<float>> interactionCache; // Pairwise distance cache
   void update(float dt, Parameters params);
   void updateColor(int index);
   void applyCollisions(int i, Parameters params);
   void applyForces(int index, vec2 force, Parameters params);
   float calculateDensity(int i, Parameters params);
   vec2 calculatePressureForce(int i, Parameters params);
+  void precomputeInteractions(Parameters params);
   ~Solver();
 };

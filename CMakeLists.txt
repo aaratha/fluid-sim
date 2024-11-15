@@ -50,6 +50,19 @@ if (NOT raygui_POPULATED)
     FetchContent_MakeAvailable(raygui)
 endif()
 
+# OpenMP support
+find_package(OpenMP)
+if(OpenMP_CXX_FOUND)
+    target_compile_options(${PROJECT_NAME} PUBLIC ${OpenMP_CXX_FLAGS})
+    target_link_libraries(${PROJECT_NAME} PUBLIC ${OpenMP_CXX_LIBRARIES})
+else()
+    # Explicitly add Homebrew paths for OpenMP
+    message(STATUS "Using OpenMP installed via Homebrew")
+    include_directories(/opt/homebrew/opt/libomp/include)
+    link_directories(/opt/homebrew/opt/libomp/lib)
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -L/opt/homebrew/opt/libomp/lib -lomp")
+endif()
+
 # Include directories for the project
 include_directories(
     ${CMAKE_SOURCE_DIR}/include  # Include your headers

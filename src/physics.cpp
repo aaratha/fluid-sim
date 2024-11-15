@@ -41,15 +41,22 @@ void PhysObj::setRadius(float r) { radius = r; }
 
 void PhysObj::setDensity(float d) { density = d; }
 
+void Solver::initializeCache(size_t particleCount) {
+  interactionCache.resize(particleCount,
+                          std::vector<float>(particleCount, 0.0f));
+}
+
 void Solver::update(float dt, Parameters params) {
+  precomputeInteractions(params); // Fill interactionCache
+
+#pragma omp parallel for
   for (int i = 0; i < objects.size(); i++) {
     objects[i]->setDensity(calculateDensity(i, params));
-    objects[i]->updatePhysics(dt);
-    updateColor(i);
-    applyCollisions(i, params);
-    objects[i]->setRadius(params.particleRadius);
     vec2 force = calculatePressureForce(i, params);
     applyForces(i, force, params);
+    objects[i]->updatePhysics(dt);
+    applyCollisions(i, params);
+    updateColor(i);
   }
 }
 
@@ -91,13 +98,13 @@ void Solver::applyCollisions(int i, Parameters params) {
   // Top wall
   if (pos.y - radius < 0) {
     pos.y = radius;
-    vel.y = -vel.y * bounceFactor;
+    vel.y *= -bounceFactor;
     collided = true;
   }
   // Bottom wall
   else if (pos.y + radius > params.screenHeight) {
     pos.y = params.screenHeight - radius;
-    vel.y = -vel.y * bounceFactor;
+    vel.y *= -bounceFactor;
     collided = true;
   }
 
@@ -111,41 +118,56 @@ void Solver::applyCollisions(int i, Parameters params) {
 float Solver::calculateDensity(int i, Parameters params) {
   float density = 0;
 
+#pragma omp parallel for reduction(+ : density)
   for (int j = 0; j < params.particleCount; j++) {
     if (i == j)
       continue;
-    vec2 diff = objects[j]->getPos() - objects[i]->getPos();
-    float dist = Vector2Length(diff);
+    float dist = interactionCache[i][j];
     float influence = smoothingKernel(params.smoothingRadius, dist);
     density += influence;
   }
-  printf("density: %f\n", density);
+
   return std::clamp(density, 1.0e-6f, 100.0f);
 }
 
 vec2 Solver::calculatePressureForce(int i, Parameters params) {
   vec2 pressureForce = vec2(0, 0);
 
+#pragma omp parallel for reduction(- : pressureForce)
   for (int j = 0; j < params.particleCount; j++) {
     if (i == j)
       continue;
 
     vec2 offset = (objects[j]->getPos() - objects[i]->getPos());
-    float dist = Vector2Length(offset);
+    float dist = interactionCache[i][j];
     vec2 dir = dist == 0 ? vec2(GetRandomValue(-2, 2), GetRandomValue(-2, 2))
                          : offset / dist;
     float slope = smoothingKernelGradient(params.smoothingRadius, dist);
-    float density = objects[j]->getDensity();
-    if (density <= 1e-6f) {
-      density = 1e-6f; // small threshold to avoid division by zero
-    }
+    float density = std::max(objects[j]->getDensity(), 1e-6f);
 
-    if (density != 0) {
-      pressureForce -= Vector2Scale(dir, densityToPressure(density, params) *
-                                             slope / density);
-    }
+    pressureForce.x -=
+        dir.x * densityToPressure(density, params) * slope / density;
+    pressureForce.y -=
+        dir.y * densityToPressure(density, params) * slope / density;
   }
   return pressureForce;
+}
+
+void Solver::precomputeInteractions(Parameters params) {
+  interactionCache.clear();
+  interactionCache.resize(objects.size(),
+                          std::vector<float>(objects.size(), 0.0f));
+
+#pragma omp parallel for
+  for (int i = 0; i < objects.size(); i++) {
+    for (int j = 0; j < objects.size(); j++) {
+      if (i >= j)
+        continue;
+      vec2 diff = objects[j]->getPos() - objects[i]->getPos();
+      float dist = Vector2Length(diff);
+      interactionCache[i][j] = dist;
+    }
+  }
 }
 
 Solver::~Solver() {
