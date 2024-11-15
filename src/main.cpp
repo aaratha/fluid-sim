@@ -10,15 +10,15 @@
 
 Parameters params = {.screenWidth = 800,
                      .screenHeight = 600,
-                     .particleCount = 500,
+                     .particleCount = 100,
                      .particleRadius = 5.0f,
                      .collisionDamping = 0.9f,
                      .friction = 0.98f,
                      .gravity = vec2(0, 1000),
-                     .smoothingRadius = 80.0f,
+                     .smoothingRadius = 1.2f,
                      .substeps = 8,
                      .targetDensity = 2.75f,
-                     .pressureMultiplier = 50.0f};
+                     .pressureMultiplier = 0.5f};
 
 int main(void) {
   // test
@@ -41,7 +41,7 @@ int main(void) {
 
   bool pause = false; // Movement pause
 
-  SetTargetFPS(60); // Set our game to run at 60 frames-per-second
+  SetTargetFPS(120); // Set our game to run at 60 frames-per-second
   //----------------------------------------------------------
 
   // Main game loop
@@ -73,13 +73,13 @@ int main(void) {
         "smoothing radius" + std::to_string(params.smoothingRadius);
     const char *smoothing = smoothingToString.c_str();
     GuiSliderBar((Rectangle){10, 40, 120, 20}, NULL, smoothing,
-                 &params.smoothingRadius, 1, 5000);
+                 &params.smoothingRadius, params.particleRadius, 100);
 
     std::string multiplierToString =
         "pressure multiplier" + std::to_string(params.pressureMultiplier);
     const char *multiplier = multiplierToString.c_str();
     GuiSliderBar((Rectangle){10, 70, 120, 20}, NULL, multiplier,
-                 &params.pressureMultiplier, 0.1, 50);
+                 &params.pressureMultiplier, 0.1, 100);
 
     std::string radiusToString =
         "radius" + std::to_string(params.particleRadius);

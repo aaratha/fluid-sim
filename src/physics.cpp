@@ -123,7 +123,8 @@ float Solver::calculateDensity(int i, Parameters params) {
     if (i == j)
       continue;
     float dist = interactionCache[i][j];
-    float influence = smoothingKernel(params.smoothingRadius, dist);
+    float influence =
+        smoothingKernel(params.smoothingRadius * params.particleRadius, dist);
     density += influence;
   }
 
@@ -142,8 +143,11 @@ vec2 Solver::calculatePressureForce(int i, Parameters params) {
     float dist = interactionCache[i][j];
     vec2 dir = dist == 0 ? vec2(GetRandomValue(-2, 2), GetRandomValue(-2, 2))
                          : offset / dist;
-    float slope = smoothingKernelGradient(params.smoothingRadius, dist);
+    float slope = smoothingKernelGradient(
+        params.smoothingRadius * params.particleRadius, dist);
     float density = std::max(objects[j]->getDensity(), 1e-6f);
+    float sharedPressure =
+        calculateSharedPressure(density, objects[i]->getDensity(), params);
 
     pressureForce.x -=
         dir.x * densityToPressure(density, params) * slope / density;
@@ -151,6 +155,13 @@ vec2 Solver::calculatePressureForce(int i, Parameters params) {
         dir.y * densityToPressure(density, params) * slope / density;
   }
   return pressureForce;
+}
+
+float Solver::calculateSharedPressure(float densityA, float densityB,
+                                      Parameters params) {
+  float pressureA = densityToPressure(densityA, params);
+  float pressureB = densityToPressure(densityB, params);
+  return (pressureA + pressureB) / 2;
 }
 
 void Solver::precomputeInteractions(Parameters params) {

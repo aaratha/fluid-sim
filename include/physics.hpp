@@ -49,6 +49,8 @@ struct Solver {
   void applyForces(int index, vec2 force, Parameters params);
   float calculateDensity(int i, Parameters params);
   vec2 calculatePressureForce(int i, Parameters params);
+  float calculateSharedPressure(float densityA, float densityB,
+                                Parameters params);
   void precomputeInteractions(Parameters params);
   ~Solver();
 };

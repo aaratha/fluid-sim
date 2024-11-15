@@ -14,17 +14,18 @@ float lerp1D(float a, float b, float t) {
 }
 
 float smoothingKernel(float radius, float dist) {
-  float volume = PI * pow(radius, 8) / 4;
-  float value = std::max(0.0f, radius * radius - dist * dist);
-  return value * value * value / volume;
+  if (dist >= radius)
+    return 0;
+
+  float volume = (PI * pow(radius, 4)) / 6;
+  return (radius - dist) * (radius - dist) / volume;
 }
 
 float smoothingKernelGradient(float radius, float dist) {
   if (dist >= radius)
     return 0;
-  float f = radius * radius - dist * dist;
-  float scale = -24 / (PI * pow(radius, 8));
-  return scale * dist * f * f;
+  float scale = 12 / (pow(radius, 4) * PI);
+  return (dist - radius) * scale;
 }
 
 float densityToPressure(float density, Parameters params) {
