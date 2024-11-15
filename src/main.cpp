@@ -10,12 +10,12 @@
 
 Parameters params = {.screenWidth = 800,
                      .screenHeight = 600,
-                     .particleCount = 100,
+                     .particleCount = 500,
                      .particleRadius = 5.0f,
-                     .collisionDamping = 0.9f,
-                     .friction = 0.98f,
+                     .collisionDamping = 1.0f,
+                     .friction = 1.0f,
                      .gravity = vec2(0, 1000),
-                     .smoothingRadius = 1.2f,
+                     .smoothingRadius = 10.0f,
                      .substeps = 8,
                      .targetDensity = 2.75f,
                      .pressureMultiplier = 0.5f};
@@ -63,7 +63,7 @@ int main(void) {
     BeginDrawing();
 
     for (int i = 0; i < solver.objects.size(); i++) {
-      DrawCircleV(solver.objects[i]->getPos(), solver.objects[i]->getRadius(),
+      DrawCircleV(solver.objects[i]->getPos(), params.particleRadius,
                   solver.objects[i]->color);
     }
 
@@ -79,7 +79,7 @@ int main(void) {
         "pressure multiplier" + std::to_string(params.pressureMultiplier);
     const char *multiplier = multiplierToString.c_str();
     GuiSliderBar((Rectangle){10, 70, 120, 20}, NULL, multiplier,
-                 &params.pressureMultiplier, 0.1, 100);
+                 &params.pressureMultiplier, 0.1, 800);
 
     std::string radiusToString =
         "radius" + std::to_string(params.particleRadius);

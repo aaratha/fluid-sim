@@ -52,6 +52,7 @@ void Solver::update(float dt, Parameters params) {
 #pragma omp parallel for
   for (int i = 0; i < objects.size(); i++) {
     objects[i]->setDensity(calculateDensity(i, params));
+    objects[i]->setRadius(params.particleRadius);
     vec2 force = calculatePressureForce(i, params);
     applyForces(i, force, params);
     objects[i]->updatePhysics(dt);
