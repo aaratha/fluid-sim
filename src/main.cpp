@@ -14,7 +14,11 @@ Parameters params = {.screenWidth = 800,
                      .particleRadius = 5.0f,
                      .collisionDamping = 0.8f,
                      .friction = 0.98f,
-                     .gravity = vec2(0, 1000)};
+                     .gravity = vec2(0, 1000),
+                     .smoothingRadius = 5000.2f,
+                     .substeps = 8,
+                     .targetDensity = 2.75f,
+                     .pressureMultiplier = 0.5f};
 
 int main(void) {
   // test
@@ -65,16 +69,17 @@ int main(void) {
 
     DrawFPS(10, 10);
 
-    std::string gravToString = "Grav: " + std::to_string(params.gravity.y);
-    const char *grav = gravToString.c_str();
-    GuiSliderBar((Rectangle){10, 40, 120, 20}, NULL, grav, &params.gravity.y, 1,
-                 1000);
+    std::string smoothingToString =
+        "smoothing radius" + std::to_string(params.smoothingRadius);
+    const char *smoothing = smoothingToString.c_str();
+    GuiSliderBar((Rectangle){10, 40, 120, 20}, NULL, smoothing,
+                 &params.smoothingRadius, 1, 8000);
 
-    std::string bounceToString =
-        "bounce: " + std::to_string(params.collisionDamping);
-    const char *bounce = bounceToString.c_str();
-    GuiSliderBar((Rectangle){10, 70, 120, 20}, NULL, bounce,
-                 &params.collisionDamping, 0, 1);
+    std::string multiplierToString =
+        "pressure multiplier" + std::to_string(params.pressureMultiplier);
+    const char *multiplier = multiplierToString.c_str();
+    GuiSliderBar((Rectangle){10, 70, 120, 20}, NULL, multiplier,
+                 &params.pressureMultiplier, 0.1, 5);
 
     std::string radiusToString =
         "radius" + std::to_string(params.particleRadius);
@@ -84,6 +89,8 @@ int main(void) {
 
     EndDrawing();
   }
+
+  solver.~Solver();
 
   return 0;
 }
