@@ -6,6 +6,7 @@
 #include <iostream>
 #include <math.h>
 #include <omp.h>
+#include <unordered_map>
 
 class PhysObj {
 private:
@@ -38,17 +39,42 @@ public:
   void setDensity(float d);
 };
 
-struct Solver {
-  void initializeCache(size_t particleCount);
-  std::vector<PhysObj *> objects;
-  vec2 g = vec2(0, 1000);
+struct GridCell {
+  int x, y;
+  bool operator==(const GridCell &other) const {
+    return x == other.x && y == other.y;
+  }
+};
+
+// Hash function for GridCell
+namespace std {
+template <> struct hash<GridCell> {
+  size_t operator()(const GridCell &cell) const {
+    return hash<int>()(cell.x) ^ (hash<int>()(cell.y) << 1);
+  }
+};
+} // namespace std
+
+class Solver {
+private:
   std::vector<std::vector<float>> interactionCache; // Pairwise distance cache
+  std::unordered_map<GridCell, std::vector<int>> spatialGrid;
+
+public:
+  float cellSize;
+  std::vector<PhysObj *> objects;
+  void buildSpatialGrid();
+  std::vector<int> getNeighbors(int index);
+  void initializeCache(size_t particleCount);
+  vec2 g = vec2(0, 1000);
   void update(float dt, Parameters params);
   void updateColor(int index);
   void applyCollisions(int i, Parameters params);
   void applyForces(int index, vec2 force, Parameters params);
-  float calculateDensity(int i, Parameters params);
-  vec2 calculatePressureForce(int i, Parameters params);
+  float calculateDensity(int i, Parameters params,
+                         const std::vector<int> &neighbors);
+  vec2 calculatePressureForce(int i, Parameters params,
+                              const std::vector<int> &neighbors);
   float calculateSharedPressure(float densityA, float densityB,
                                 Parameters params);
   void precomputeInteractions(Parameters params);
