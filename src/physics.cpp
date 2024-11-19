@@ -47,32 +47,44 @@ void Solver::initializeCache(size_t particleCount) {
 }
 
 void Solver::update(float dt, Parameters params) {
-  precomputeInteractions(params); // Fill interactionCache and spatialGrid
+  // Precompute interactions first (outside parallel sections)
+  precomputeInteractions(params);
+
+  // Local copy of smoothing radius to avoid race conditions
+  const float localCellSize = params.smoothingRadius;
 
   // Precompute neighbors
   std::vector<std::vector<int>> neighborLists(objects.size());
+
+#pragma omp parallel for
   for (int i = 0; i < objects.size(); ++i) {
+    objects[i]->setRadius(params.particleRadius);
     neighborLists[i] = getNeighbors(i);
+    updateColor(i);
   }
 
 #pragma omp parallel for
   for (int i = 0; i < objects.size(); ++i) {
+    objects[i]->setDensity(calculateDensity(i, params, neighborLists[i]));
     vec2 velocity = objects[i]->getPos() - objects[i]->getPrev();
     objects[i]->setTarg(objects[i]->getPos() + velocity * 1 / 120.0f);
+  }
 
-    cellSize = params.smoothingRadius;
-    objects[i]->setDensity(calculateDensity(i, params, neighborLists[i]));
-    objects[i]->setRadius(params.particleRadius);
+#pragma omp parallel for
+  for (int i = 0; i < objects.size(); ++i) {
     vec2 force = calculatePressureForce(i, params, neighborLists[i]);
     applyForces(i, force, params);
+  }
+
+#pragma omp parallel for
+  for (int i = 0; i < objects.size(); ++i) {
     objects[i]->updatePhysics(dt);
     applyCollisions(i, params);
-    updateColor(i);
   }
 }
 
 void Solver::updateColor(int index) {
-  int rg = 50 * int(abs(Vector2Length(objects[index]->getVelocity())));
+  int rg = 120 + 100 * int(abs(Vector2Length(objects[index]->getVelocity())));
   objects[index]->color = (Color){static_cast<unsigned char>(rg),
                                   static_cast<unsigned char>(rg), 255, 255};
 }
@@ -91,39 +103,28 @@ void Solver::applyCollisions(int i, Parameters params) {
   // Wall collisions with bounce effect
   const float bounceFactor =
       params.collisionDamping; // Reduces velocity on bounce
-  bool collided = false;
 
-  // Left wall
+  // Handle horizontal (x-axis) collisions
   if (pos.x - radius < 0) {
     pos.x = radius;
     vel.x = -vel.x * bounceFactor;
-    collided = true;
-  }
-  // Right wall
-  else if (pos.x + radius > params.screenWidth) {
+  } else if (pos.x + radius > params.screenWidth) {
     pos.x = params.screenWidth - radius;
     vel.x = -vel.x * bounceFactor;
-    collided = true;
   }
 
-  // Top wall
+  // Handle vertical (y-axis) collisions
   if (pos.y - radius < 0) {
     pos.y = radius;
-    vel.y *= -bounceFactor;
-    collided = true;
-  }
-  // Bottom wall
-  else if (pos.y + radius > params.screenHeight) {
+    vel.y = -vel.y * bounceFactor;
+  } else if (pos.y + radius > params.screenHeight) {
     pos.y = params.screenHeight - radius;
-    vel.y *= -bounceFactor;
-    collided = true;
+    vel.y = -vel.y * bounceFactor;
   }
 
-  // Update position and velocity if collision occurred
-  if (collided) {
-    obj->setPos(pos);
-    obj->setPrev(pos - vel); // Update previous position to reflect new velocity
-  }
+  // Update position and velocity
+  obj->setPos(pos);
+  obj->setPrev(pos - vel); // Update previous position to reflect new velocity
 }
 
 float Solver::calculateDensity(int i, Parameters params,
@@ -144,34 +145,44 @@ float Solver::calculateDensity(int i, Parameters params,
     density += influence;
   }
 
-  return std::clamp(density, 1.0e-6f, 100.0f);
+  return std::clamp(density, 1.0e-6f, 10.0f);
 }
 
 vec2 Solver::calculatePressureForce(int i, Parameters params,
                                     const std::vector<int> &neighbors) {
   vec2 pressureForce = vec2(0, 0);
+  const vec2 targetPos = objects[i]->getTarg();
+  const float targetDensity = objects[i]->getDensity();
 
-#pragma omp parallel for reduction(- : pressureForce)
+// Vectorization-friendly approach
+#pragma omp simd reduction(- : pressureForce)
   for (int j : neighbors) {
     if (i == j)
       continue;
 
-    vec2 offset = (objects[j]->getPos() - objects[i]->getTarg());
+    vec2 offset = Vector2Subtract(objects[j]->getPos(), targetPos);
     float dist = Vector2Length(offset);
 
-    if (dist > params.smoothingRadius)
+    if (dist >= params.smoothingRadius)
       continue;
 
-    vec2 dir = dist == 0 ? vec2(GetRandomValue(-2, 2), GetRandomValue(-2, 2))
-                         : offset / dist;
-    float slope = smoothingKernelGradient(params.smoothingRadius, dist);
-    float density = objects[j]->getDensity();
-    float sharedPressure =
-        calculateSharedPressure(density, objects[i]->getDensity(), params);
+    // Precompute frequently used values
+    float invDist = dist > 0 ? 1.0f / dist : 0.0f;
+    vec2 dir = offset * invDist;
 
-    pressureForce.x -= dir.x * sharedPressure * slope / density;
-    pressureForce.y -= dir.y * sharedPressure * slope / density;
+    float slope = smoothingKernelGradient(params.smoothingRadius, dist);
+    float neighborDensity = objects[j]->getDensity();
+
+    // Single shared pressure calculation
+    float pressureTerm =
+        calculateSharedPressure(neighborDensity, targetDensity, params);
+
+    // Vectorization-friendly force calculation
+    vec2 particleForce = dir * (pressureTerm * slope / neighborDensity);
+
+    pressureForce -= particleForce;
   }
+
   return pressureForce;
 }
 
@@ -185,32 +196,53 @@ float Solver::calculateSharedPressure(float densityA, float densityB,
 void Solver::precomputeInteractions(Parameters params) { buildSpatialGrid(); }
 
 void Solver::buildSpatialGrid() {
+  // Use a more cache-friendly approach with preallocated space
   spatialGrid.clear();
-  for (int i = 0; i < objects.size(); ++i) {
-    vec2 pos = objects[i]->getPos();
-    int cellX = static_cast<int>(pos.x / cellSize);
-    int cellY = static_cast<int>(pos.y / cellSize);
-    GridCell cell{cellX, cellY};
-    spatialGrid[cell].push_back(i);
+  spatialGrid.reserve(objects.size() / 4); // Estimate initial capacity
+
+#pragma omp parallel
+  {
+    // Thread-local temporary grids to reduce contention
+    std::unordered_map<GridCell, std::vector<int>> localGrids;
+
+#pragma omp for
+    for (int i = 0; i < objects.size(); ++i) {
+      vec2 pos = objects[i]->getPos();
+      int cellX = static_cast<int>(pos.x / cellSize);
+      int cellY = static_cast<int>(pos.y / cellSize);
+      GridCell cell{cellX, cellY};
+      localGrids[cell].push_back(i);
+    }
+
+// Merge thread-local grids
+#pragma omp critical
+    {
+      for (const auto &localGrid : localGrids) {
+        spatialGrid[localGrid.first].insert(spatialGrid[localGrid.first].end(),
+                                            localGrid.second.begin(),
+                                            localGrid.second.end());
+      }
+    }
   }
 }
 
-// Get neighboring particles
 std::vector<int> Solver::getNeighbors(int index) {
   std::vector<int> neighbors;
   vec2 pos = objects[index]->getPos();
   int cellX = static_cast<int>(pos.x / cellSize);
   int cellY = static_cast<int>(pos.y / cellSize);
 
-  // Check the cell and surrounding cells
+  // Reduce memory allocations by reserving space
+  neighbors.reserve(32); // Typical expectation of neighbors
+
+  // Check the cell and surrounding cells with early exit opportunities
   const int cellDist = 2;
   for (int dx = -cellDist; dx <= cellDist; ++dx) {
     for (int dy = -cellDist; dy <= cellDist; ++dy) {
       GridCell neighborCell{cellX + dx, cellY + dy};
-      if (spatialGrid.find(neighborCell) != spatialGrid.end()) {
-        const auto &cellParticles = spatialGrid[neighborCell];
-        neighbors.insert(neighbors.end(), cellParticles.begin(),
-                         cellParticles.end());
+      auto it = spatialGrid.find(neighborCell);
+      if (it != spatialGrid.end()) {
+        neighbors.insert(neighbors.end(), it->second.begin(), it->second.end());
       }
     }
   }

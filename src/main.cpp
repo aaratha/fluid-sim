@@ -10,15 +10,15 @@
 
 Parameters params = {.screenWidth = 800,
                      .screenHeight = 600,
-                     .particleCount = 100,
+                     .particleCount = 1000,
                      .particleRadius = 5.0f,
                      .collisionDamping = 1.0f,
-                     .friction = 1.0f,
+                     .friction = 0.9f,
                      .gravity = vec2(0, 1000),
-                     .smoothingRadius = 70.0f,
+                     .smoothingRadius = 120.0f,
                      .substeps = 8,
                      .targetDensity = 2.75f,
-                     .pressureMultiplier = 0.5f};
+                     .pressureMultiplier = 20.0f};
 
 int main(void) {
   // test
@@ -73,18 +73,24 @@ int main(void) {
         "smoothing radius" + std::to_string(params.smoothingRadius);
     const char *smoothing = smoothingToString.c_str();
     GuiSliderBar((Rectangle){10, 40, 120, 20}, NULL, smoothing,
-                 &params.smoothingRadius, params.particleRadius, 100);
+                 &params.smoothingRadius, params.particleRadius, 1000);
 
     std::string multiplierToString =
         "pressure multiplier" + std::to_string(params.pressureMultiplier);
     const char *multiplier = multiplierToString.c_str();
     GuiSliderBar((Rectangle){10, 70, 120, 20}, NULL, multiplier,
-                 &params.pressureMultiplier, 0.1, 10);
+                 &params.pressureMultiplier, 0.1, 1000);
+
+    std::string densityToString =
+        "target density" + std::to_string(params.targetDensity);
+    const char *density = densityToString.c_str();
+    GuiSliderBar((Rectangle){10, 100, 120, 20}, NULL, density,
+                 &params.targetDensity, 0.1, 10);
 
     std::string radiusToString =
         "radius" + std::to_string(params.particleRadius);
     const char *radius = radiusToString.c_str();
-    GuiSliderBar((Rectangle){10, 100, 120, 20}, NULL, radius,
+    GuiSliderBar((Rectangle){10, 130, 120, 20}, NULL, radius,
                  &params.particleRadius, 0, 20);
 
     EndDrawing();
