@@ -92,6 +92,7 @@ void Solver::updateColor(int index) {
 void Solver::applyForces(int index, vec2 force, Parameters params) {
   // Apply gravity when the mouse button is not down
   objects[index]->accelerate(force / objects[index]->getDensity());
+  // objects[index]->accelerate(params.gravity);
 }
 
 void Solver::applyCollisions(int i, Parameters params) {
