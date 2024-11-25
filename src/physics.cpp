@@ -131,8 +131,8 @@ float Solver::calculateDensity(size_t i, Parameters params,
   }
 
   // std::cout << density << std::endl;
-  // return fmax(density, params.targetDensity);
-  return std::clamp(density, 1.0e-6f, 100.0f);
+  //    return fmax(density, params.targetDensity);
+  return Clamp(density, 1.0e-6, 100.0);
 }
 
 float Solver::calculateNearDensity(size_t i, Parameters params,
