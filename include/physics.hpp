@@ -7,38 +7,9 @@
 #include <math.h>
 #include <omp.h>
 #include <unordered_map>
+#include <vector>
 
-class PhysObj {
-private:
-  vec2 pos;
-  vec2 prev;
-  vec2 targ;
-  vec2 acc = vec2(0, 0);
-  float friction = 0.98;
-  float radius = 10;
-  float density = 1;
-
-public:
-  PhysObj(vec2 pos, float radius);
-
-  void updatePhysics(float dt);
-  void accelerate(vec2 a);
-
-  Color color = BLUE;
-
-  vec2 getPos();
-  vec2 getPrev();
-  vec2 getTarg();
-  float getRadius();
-  float getDensity();
-  vec2 getVelocity();
-  void setPos(vec2 p);
-  void setPrev(vec2 p);
-  void setTarg(vec2 t);
-  void setRadius(float r);
-  void setDensity(float d);
-};
-
+// Structure for GridCell remains the same
 struct GridCell {
   int x, y;
   bool operator==(const GridCell &other) const {
@@ -46,7 +17,6 @@ struct GridCell {
   }
 };
 
-// Hash function for GridCell
 namespace std {
 template <> struct hash<GridCell> {
   size_t operator()(const GridCell &cell) const {
@@ -55,6 +25,8 @@ template <> struct hash<GridCell> {
 };
 } // namespace std
 
+// Global particle arrays
+
 class Solver {
 private:
   std::vector<std::vector<float>> interactionCache; // Pairwise distance cache
@@ -62,18 +34,29 @@ private:
 
 public:
   float cellSize;
-  std::vector<PhysObj *> objects;
+  float smoothingRadius;
+  float radius = 10;
   void buildSpatialGrid();
-  std::vector<int> getNeighbors(int index);
+
+  std::vector<vec2> positions;
+  std::vector<vec2> predictedPositions;
+  std::vector<vec2> velocities;
+  std::vector<float> densities;
+  std::vector<float> nearDensities;
+  std::vector<Color> colors;
+
+  std::vector<int> getNeighbors(size_t index);
   void initializeCache(size_t particleCount);
   vec2 g = vec2(0, 1000);
   void update(float dt, Parameters params);
-  void updateColor(int index);
-  void applyCollisions(int i, Parameters params);
-  void applyForces(int index, vec2 force, Parameters params);
-  float calculateDensity(int i, Parameters params,
+  void updateColor(size_t index, Parameters params);
+  void applyCollisions(size_t i, Parameters params);
+  void applyForces(size_t index, vec2 force, Parameters params);
+  float calculateDensity(size_t i, Parameters params,
                          const std::vector<int> &neighbors);
-  vec2 calculatePressureForce(int i, Parameters params,
+  float calculateNearDensity(size_t i, Parameters params,
+                             const std::vector<int> &neighbors);
+  vec2 calculatePressureForce(size_t i, Parameters params,
                               const std::vector<int> &neighbors);
   float calculateSharedPressure(float densityA, float densityB,
                                 Parameters params);

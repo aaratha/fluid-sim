@@ -2,6 +2,9 @@
 * Readme | fluid-sim :TOC:
 - [[#introduction][Introduction]]
 - [[#methodology][Methodology]]
+  - [[#graphical-interface][Graphical Interface]]
+  - [[#fluid-dynamics][Fluid Dynamics]]
+  - [[#optimizations][Optimizations]]
 - [[#conclusion][Conclusion]]
 
 * Introduction
@@ -11,4 +14,11 @@ The video documents his investigation into fluid dynamics, and his following imp
 
 This project has been developed using C++ and Raylib for basic graphical interfacing
 * Methodology
+** Graphical Interface
+** Fluid Dynamics
+*** Density
+*** Pressure
+** Optimizations
+*** Parallel Processing
+*** Spacial Discretization and Hashing
 * Conclusion

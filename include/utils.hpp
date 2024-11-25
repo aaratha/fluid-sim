@@ -15,16 +15,20 @@ struct Parameters {
   float particleRadius;
   float collisionDamping;
   float friction;
-  vec2 gravity;
-  float smoothingRadius;
+  float gravity;
+  float smoothingMultiplier;
   int substeps;
   float targetDensity;
   float pressureMultiplier;
+  float maxVelocity;
+  float nearPressureMultiplier;
 };
 
 vec2 lerp2D(vec2 a, vec2 b, float t);
 float lerp1D(float a, float b, float t);
 
 float smoothingKernel(float radius, float dist);
+float nearSmoothingKernel(float radius, float dist);
 float smoothingKernelGradient(float radius, float dist);
 float densityToPressure(float density, Parameters params);
+float nearDensityToNearPressure(float nearDensity, Parameters params);

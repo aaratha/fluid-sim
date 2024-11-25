@@ -2,34 +2,35 @@
 #include <cmath>
 #include <raylib.h>
 
-vec2 lerp2D(vec2 a, vec2 b, float t) {
-  a.x += (b.x - a.x) * t;
-  a.y += (b.y - a.y) * t;
-  return a;
-}
-
-float lerp1D(float a, float b, float t) {
-  a += (b - a) * t;
-  return a;
-}
-
 float smoothingKernel(float radius, float dist) {
-  if (dist >= radius)
+  if (0 >= dist || dist >= radius)
     return 0;
 
-  float volume = (PI * pow(radius, 4)) / 6;
-  return (radius - dist) * (radius - dist) / volume;
+  float consts = 315 / (64 * PI * pow(radius, 9));
+  return consts * pow((radius * radius - dist * dist), 3);
+}
+
+float nearSmoothingKernel(float radius, float dist) {
+  if (0 >= dist || dist >= radius)
+    return 0;
+
+  // Spiky kernel with more balanced short-range behavior
+  return -45 / (PI * pow(radius, 6));
 }
 
 float smoothingKernelGradient(float radius, float dist) {
-  if (dist >= radius)
+  if (0 >= dist || dist >= radius)
     return 0;
-  float scale = 12 / (pow(radius, 4) * PI);
-  return (dist - radius) * scale;
+
+  return -(45 / (PI * pow(radius, 6))) * (radius - dist);
 }
 
 float densityToPressure(float density, Parameters params) {
   float densityError = density - params.targetDensity;
-  float pressure = densityError * params.pressureMultiplier;
-  return pressure;
+  return densityError * params.pressureMultiplier;
+}
+
+float nearDensityToNearPressure(float nearDensity, Parameters params) {
+  // Linear response for short-range repulsion
+  return nearDensity * params.nearPressureMultiplier;
 }
