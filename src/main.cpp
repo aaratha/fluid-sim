@@ -8,8 +8,8 @@
 #include "raylib-cpp.hpp"
 #include "utils.hpp"
 
-Parameters params = {.screenWidth = 500,
-                     .screenHeight = 800,
+Parameters params = {.screenWidth = 1280,
+                     .screenHeight = 720,
                      .particleCount = 3000,
                      .particleRadius = 3.0f,
                      .collisionDamping = 1.0f,
@@ -17,10 +17,11 @@ Parameters params = {.screenWidth = 500,
                      .gravity = 0.0,
                      .smoothingMultiplier = 20.0f,
                      .substeps = 8,
-                     .targetDensity = 2.5f,
+                     .targetDensity = 50.0f,
                      .pressureMultiplier = 20.0f,
                      .maxVelocity = 300.0f,
-                     .nearPressureMultiplier = 300.0};
+                     .nearPressureMultiplier = 300.0,
+                     .viscosity = 0.0};
 
 int main(void) {
   // Initialization
@@ -39,13 +40,25 @@ int main(void) {
   solver.nearDensities.resize(params.particleCount, 0.0f);
   solver.colors.resize(params.particleCount);
 
-  // Initialize particle positions randomly
+  // Initialize particle positions in a grid
+  int gridCols = static_cast<int>(sqrt(params.particleCount));
+  int gridRows = params.particleCount / gridCols +
+                 (params.particleCount % gridCols > 0 ? 1 : 0);
+
+  float gridSpacing =
+      params.particleRadius * 2.0f; // Spacing based on particle radius
+  float startX =
+      (screenWidth - gridCols * gridSpacing) / 2.0f; // Center horizontally
+  float startY =
+      (screenHeight - gridRows * gridSpacing) / 2.0f; // Center vertically
+
   for (int i = 0; i < params.particleCount; ++i) {
-    vec2 randPos =
-        vec2{float(GetRandomValue(screenWidth / 3, screenWidth * 2 / 3)),
-             float(GetRandomValue(screenHeight / 3, screenHeight * 2 / 3))};
-    solver.positions[i] = randPos;
-    solver.predictedPositions[i] = randPos;
+    int row = i / gridCols;
+    int col = i % gridCols;
+
+    vec2 gridPos = vec2{startX + col * gridSpacing, startY + row * gridSpacing};
+    solver.positions[i] = gridPos;
+    solver.predictedPositions[i] = gridPos;
   }
 
   bool pause = false; // Movement pause
@@ -114,9 +127,15 @@ int main(void) {
     GuiSliderBar((Rectangle){10, 160, 120, 20}, NULL, radius,
                  &params.particleRadius, 0, 20);
 
+    std::string viscosityToString =
+        "viscosity: " + std::to_string(params.viscosity);
+    const char *viscosity = viscosityToString.c_str();
+    GuiSliderBar((Rectangle){10, 190, 120, 20}, NULL, viscosity,
+                 &params.viscosity, 0, 2);
+
     std::string gravityToString = "gravity: " + std::to_string(params.gravity);
     const char *gravity = gravityToString.c_str();
-    GuiSliderBar((Rectangle){10, 190, 120, 20}, NULL, gravity, &params.gravity,
+    GuiSliderBar((Rectangle){10, 220, 120, 20}, NULL, gravity, &params.gravity,
                  -1000, 1000);
 
     EndDrawing();

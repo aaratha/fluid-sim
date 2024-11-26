@@ -1,6 +1,7 @@
 #include "physics.hpp"
 #include "utils.hpp"
 #include <algorithm>
+#include <cstddef>
 #include <raylib.h>
 
 void Solver::initializeCache(size_t particleCount) {
@@ -11,6 +12,7 @@ void Solver::initializeCache(size_t particleCount) {
 void Solver::update(float dt, Parameters params) {
   // Cache frequently accessed values
   smoothingRadius = params.smoothingMultiplier * params.particleRadius;
+  kernels = precomputeKernels(smoothingRadius);
   cellSize = smoothingRadius;
 
   // Update spatial partitioning
@@ -42,12 +44,12 @@ void Solver::update(float dt, Parameters params) {
 // Step 3: Calculate and apply forces
 #pragma omp parallel for schedule(dynamic)
   for (size_t i = 0; i < positions.size(); ++i) {
-    vec2 pressureForce = calculatePressureForce(i, params, neighborLists[i]);
+    Forces forces = calculateForces(i, params, neighborLists[i]);
 
     // Apply pressure acceleration
-    vec2 pressureAcc =
-        pressureForce / densities[i]; // / std::max(densities[i], 1e-6f);
-    velocities[i] += pressureAcc * dt;
+    vec2 acc = (forces.pressure + forces.tension + forces.viscosity) /
+               densities[i]; // / std::max(densities[i], 1e-6f);
+    velocities[i] += acc * dt;
 
     // Apply velocity constraints
     float currentSpeed = Vector2Length(velocities[i]);
@@ -127,7 +129,7 @@ float Solver::calculateDensity(size_t i, Parameters params,
     if (dist >= smoothingRadius)
       continue;
 
-    density += 10 * smoothingKernel(smoothingRadius, dist);
+    density += 10 * poly6Kernel(kernels, smoothingRadius, dist);
   }
 
   // std::cout << density << std::endl;
@@ -158,9 +160,12 @@ float Solver::calculateNearDensity(size_t i, Parameters params,
   return std::clamp(density, 1.0e-6f, 100.0f);
 }
 
-vec2 Solver::calculatePressureForce(size_t i, Parameters params,
-                                    const std::vector<int> &neighbors) {
+Forces Solver::calculateForces(size_t i, Parameters params,
+                               const std::vector<int> &neighbors) {
+  vec2 tensionForce = {0.0f, 0.0f};
   vec2 pressureForce = {0.0f, 0.0f};
+  vec2 viscosityForce = {0.0f, 0.0f};
+
   const vec2 &targetPos = predictedPositions[i];
   const float targetDensity = densities[i];
 
@@ -184,7 +189,7 @@ vec2 Solver::calculatePressureForce(size_t i, Parameters params,
       dir = Vector2Scale(offset, 1.0f / dist);
     }
 
-    float slope = smoothingKernelGradient(smoothingRadius, dist);
+    float slope = spikeGradKernel(kernels, smoothingRadius, dist);
     float neighborDensity = std::max(densities[neighborIdx], 1e-6f);
 
     float sharedPressure =
@@ -194,9 +199,17 @@ vec2 Solver::calculatePressureForce(size_t i, Parameters params,
     pressureForce = Vector2Subtract(
         pressureForce, Vector2Scale(dir, (sharedPressure + nearPressure) *
                                              slope / neighborDensity));
-  }
 
-  return pressureForce;
+    vec2 relativeVelocity =
+        Vector2Subtract(velocities[neighborIdx], velocities[i]);
+    float velocityAlongDir = Vector2DotProduct(relativeVelocity, dir);
+    viscosityForce = Vector2Add(
+        viscosityForce,
+        Vector2Scale(dir, params.viscosity *
+                              viscKernel(kernels, smoothingRadius, dist) *
+                              velocityAlongDir / neighborDensity));
+  }
+  return Forces{tensionForce, pressureForce, viscosityForce};
 }
 
 float Solver::calculateSharedPressure(float densityA, float densityB,

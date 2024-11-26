@@ -25,7 +25,11 @@ template <> struct hash<GridCell> {
 };
 } // namespace std
 
-// Global particle arrays
+struct Forces {
+  vec2 tension;
+  vec2 pressure;
+  vec2 viscosity;
+};
 
 class Solver {
 private:
@@ -45,6 +49,8 @@ public:
   std::vector<float> nearDensities;
   std::vector<Color> colors;
 
+  Kernels kernels;
+
   std::vector<int> getNeighbors(size_t index);
   void initializeCache(size_t particleCount);
   vec2 g = vec2(0, 1000);
@@ -56,8 +62,9 @@ public:
                          const std::vector<int> &neighbors);
   float calculateNearDensity(size_t i, Parameters params,
                              const std::vector<int> &neighbors);
-  vec2 calculatePressureForce(size_t i, Parameters params,
-                              const std::vector<int> &neighbors);
+  Forces calculateForces(size_t i, Parameters params,
+                         const std::vector<int> &neighbors);
+
   float calculateSharedPressure(float densityA, float densityB,
                                 Parameters params);
   void precomputeInteractions(Parameters params);
