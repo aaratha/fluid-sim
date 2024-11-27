@@ -2,11 +2,14 @@
 #include <cmath>
 #include <raylib.h>
 
+vec2 operator+(const vec2 &a, const vec2 &b) { return Vector2Add(a, b); }
+vec2 operator-(const vec2 &a, const vec2 &b) { return Vector2Subtract(a, b); }
+
 Kernels precomputeKernels(float radius) {
   Kernels kernels;
   kernels.poly6 = 315 / (64 * PI * pow(radius, 9));
   kernels.spike = -45 / (PI * pow(radius, 6));
-  kernels.visc = 15 / (2 * PI * radius * radius * radius);
+  kernels.visc = 45 / (PI * pow(radius, 5));
   return kernels;
 }
 
@@ -14,22 +17,20 @@ float poly6Kernel(Kernels &kernels, float radius, float dist) {
   if (dist <= 0 || dist >= radius)
     return 0;
   float diff = radius * radius - dist * dist;
-  return kernels.poly6 * diff * diff * diff;
+  return kernels.poly6 * diff * diff * diff * 100000;
 }
 
 float spikeGradKernel(Kernels &kernels, float radius, float dist) {
   if (dist <= 0 || dist >= radius)
     return 0;
-  return kernels.spike * (radius - dist);
+  float diff = radius - dist;
+  return kernels.spike * diff * diff * 100000;
 }
 
 float viscKernel(Kernels &kernels, float radius, float dist) {
   if (dist <= 0 || dist >= radius)
     return 0;
-  float r2 = radius * radius;
-  float r3 = r2 * radius;
-  return kernels.visc * (-(dist * dist * dist) / (2 * r3) + (dist * dist) / r2 +
-                         radius / (2 * dist) - 1);
+  return kernels.visc * (radius - dist) * 100000;
 }
 
 float nearSmoothingKernel(float radius, float dist) {
@@ -43,6 +44,7 @@ float nearSmoothingKernel(float radius, float dist) {
 float densityToPressure(float density, Parameters params) {
   float densityError = density - params.targetDensity;
   return densityError * params.pressureMultiplier;
+  // return std::max(0.0f, densityError * params.pressureMultiplier);
 }
 
 float nearDensityToNearPressure(float nearDensity, Parameters params) {

@@ -8,20 +8,22 @@
 #include "raylib-cpp.hpp"
 #include "utils.hpp"
 
-Parameters params = {.screenWidth = 1280,
-                     .screenHeight = 720,
-                     .particleCount = 3000,
+Parameters params = {.screenWidth = 500,
+                     .screenHeight = 500,
+                     .particleCount = 2000,
                      .particleRadius = 3.0f,
-                     .collisionDamping = 1.0f,
+                     .collisionDamping = 0.95f,
                      .friction = 1.0f,
                      .gravity = 0.0,
-                     .smoothingMultiplier = 20.0f,
+                     .smoothingMultiplier = 13.0f,
                      .substeps = 8,
-                     .targetDensity = 50.0f,
-                     .pressureMultiplier = 20.0f,
-                     .maxVelocity = 300.0f,
+                     .targetDensity = 2.0f,
+                     .pressureMultiplier = 100000.0f,
+                     .maxVelocity = 400.0f,
                      .nearPressureMultiplier = 300.0,
-                     .viscosity = 0.0};
+                     .viscosity = 50.0,
+                     .maxAcceleration = 200.0f,
+                     .mass = 1.0f};
 
 int main(void) {
   // Initialization
@@ -106,20 +108,19 @@ int main(void) {
         "pressure multiplier: " + std::to_string(params.pressureMultiplier);
     const char *multiplier = multiplierToString.c_str();
     GuiSliderBar((Rectangle){10, 70, 120, 20}, NULL, multiplier,
-                 &params.pressureMultiplier, 0.1, 10000);
+                 &params.pressureMultiplier, 0.1, 100000);
 
-    std::string nearMultiplierToString =
-        "near pressure multiplier: " +
-        std::to_string(params.nearPressureMultiplier);
-    const char *nearMultiplier = nearMultiplierToString.c_str();
-    GuiSliderBar((Rectangle){10, 100, 120, 20}, NULL, nearMultiplier,
-                 &params.nearPressureMultiplier, -19, 100);
+    std::string accelerationToString =
+        "max acceleration" + std::to_string(params.maxAcceleration);
+    const char *acceleration = accelerationToString.c_str();
+    GuiSliderBar((Rectangle){10, 100, 120, 20}, NULL, acceleration,
+                 &params.maxAcceleration, 0, 100);
 
     std::string densityToString =
         "target density: " + std::to_string(params.targetDensity);
     const char *density = densityToString.c_str();
     GuiSliderBar((Rectangle){10, 130, 120, 20}, NULL, density,
-                 &params.targetDensity, 0.1, 200);
+                 &params.targetDensity, 0.0, 10);
 
     std::string radiusToString =
         "radius: " + std::to_string(params.particleRadius);
@@ -131,7 +132,7 @@ int main(void) {
         "viscosity: " + std::to_string(params.viscosity);
     const char *viscosity = viscosityToString.c_str();
     GuiSliderBar((Rectangle){10, 190, 120, 20}, NULL, viscosity,
-                 &params.viscosity, 0, 2);
+                 &params.viscosity, 0, 300);
 
     std::string gravityToString = "gravity: " + std::to_string(params.gravity);
     const char *gravity = gravityToString.c_str();

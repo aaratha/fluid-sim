@@ -8,6 +8,9 @@
 namespace rl = raylib;
 using vec2 = rl::Vector2;
 
+vec2 operator+(const vec2 &a, const vec2 &b);
+vec2 operator-(const vec2 &a, const vec2 &b);
+
 struct Parameters {
   int screenWidth;
   int screenHeight;
@@ -23,6 +26,8 @@ struct Parameters {
   float maxVelocity;
   float nearPressureMultiplier;
   float viscosity;
+  float maxAcceleration;
+  float mass;
 };
 
 // Precompute kernel coefficients during initialization

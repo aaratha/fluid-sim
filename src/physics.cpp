@@ -1,8 +1,11 @@
 #include "physics.hpp"
 #include "utils.hpp"
 #include <algorithm>
+#include <cmath>
 #include <cstddef>
 #include <raylib.h>
+
+const float EPS = 1e-6f;
 
 void Solver::initializeCache(size_t particleCount) {
   interactionCache.resize(particleCount,
@@ -38,7 +41,6 @@ void Solver::update(float dt, Parameters params) {
 #pragma omp parallel for schedule(dynamic)
   for (size_t i = 0; i < positions.size(); ++i) {
     densities[i] = calculateDensity(i, params, neighborLists[i]);
-    nearDensities[i] = calculateNearDensity(i, params, neighborLists[i]);
   }
 
 // Step 3: Calculate and apply forces
@@ -49,6 +51,11 @@ void Solver::update(float dt, Parameters params) {
     // Apply pressure acceleration
     vec2 acc = (forces.pressure + forces.tension + forces.viscosity) /
                densities[i]; // / std::max(densities[i], 1e-6f);
+    float acc_limit = params.maxAcceleration;
+    float acc_mag = Vector2Length(acc);
+    if (acc_mag > acc_limit * acc_limit) {
+      acc = acc / sqrt(acc_mag) * acc_limit;
+    }
     velocities[i] += acc * dt;
 
     // Apply velocity constraints
@@ -69,7 +76,7 @@ void Solver::update(float dt, Parameters params) {
     updateColor(i, params);
 
     // Update position
-    positions[i] = positions[i] + velocities[i] * dt;
+    positions[i] += velocities[i] * dt;
 
     // Handle collisions with boundaries
     applyCollisions(i, params);
@@ -123,41 +130,18 @@ float Solver::calculateDensity(size_t i, Parameters params,
     if (i == neighborIdx)
       continue;
 
-    float dist = Vector2Length(
-        Vector2Subtract(predictedPositions[neighborIdx], targetPos));
+    float dist = Vector2Distance(predictedPositions[neighborIdx], targetPos);
 
     if (dist >= smoothingRadius)
       continue;
 
-    density += 10 * poly6Kernel(kernels, smoothingRadius, dist);
+    density += params.mass * poly6Kernel(kernels, smoothingRadius + EPS, dist);
   }
 
   // std::cout << density << std::endl;
-  //    return fmax(density, params.targetDensity);
-  return Clamp(density, 1.0e-6, 100.0);
-}
-
-float Solver::calculateNearDensity(size_t i, Parameters params,
-                                   const std::vector<int> &neighbors) {
-  float density = 0.0f;
-  const vec2 &targetPos = predictedPositions[i];
-
-#pragma omp parallel for reduction(+ : density)
-  for (size_t j = 0; j < neighbors.size(); ++j) {
-    int neighborIdx = neighbors[j];
-    if (i == neighborIdx)
-      continue;
-
-    float dist = Vector2Length(
-        Vector2Subtract(predictedPositions[neighborIdx], targetPos));
-
-    if (dist >= smoothingRadius)
-      continue;
-
-    density += nearSmoothingKernel(smoothingRadius, dist);
-  }
-
-  return std::clamp(density, 1.0e-6f, 100.0f);
+  //     return fmax(density, params.targetDensity);
+  return Clamp(density, 1.0e-15, 100.0);
+  // return std::max(density, params.targetDensity);
 }
 
 Forces Solver::calculateForces(size_t i, Parameters params,
@@ -173,7 +157,7 @@ Forces Solver::calculateForces(size_t i, Parameters params,
     if (i == neighborIdx)
       continue;
 
-    vec2 offset = Vector2Subtract(positions[neighborIdx], targetPos);
+    vec2 offset = predictedPositions[neighborIdx] - targetPos;
     float dist = Vector2Length(offset);
 
     if (dist >= smoothingRadius)
@@ -181,34 +165,34 @@ Forces Solver::calculateForces(size_t i, Parameters params,
 
     // Handle particles at exactly the same position
     vec2 dir;
-    if (dist < 1.0f) {
-      dir = vec2{static_cast<float>(GetRandomValue(-100, 100)) / 100.0f,
-                 static_cast<float>(GetRandomValue(-100, 100)) / 100.0f};
+    if (dist == 0.0f) {
+      dir = vec2{static_cast<float>(GetRandomValue(-1, 1)),
+                 static_cast<float>(GetRandomValue(-1, 1))};
       dir = Vector2Normalize(dir);
     } else {
-      dir = Vector2Scale(offset, 1.0f / dist);
+      dir = Vector2Scale(offset, (1.0f / dist));
     }
 
-    float slope = spikeGradKernel(kernels, smoothingRadius, dist);
+    float slope = spikeGradKernel(kernels, smoothingRadius + EPS, dist);
     float neighborDensity = std::max(densities[neighborIdx], 1e-6f);
 
     float sharedPressure =
         calculateSharedPressure(targetDensity, neighborDensity, params);
-    float nearPressure = nearDensityToNearPressure(nearDensities[i], params);
 
-    pressureForce = Vector2Subtract(
-        pressureForce, Vector2Scale(dir, (sharedPressure + nearPressure) *
-                                             slope / neighborDensity));
+    pressureForce =
+        pressureForce + Vector2Scale(dir, params.mass * sharedPressure * slope /
+                                              neighborDensity);
 
-    vec2 relativeVelocity =
-        Vector2Subtract(velocities[neighborIdx], velocities[i]);
-    float velocityAlongDir = Vector2DotProduct(relativeVelocity, dir);
-    viscosityForce = Vector2Add(
-        viscosityForce,
-        Vector2Scale(dir, params.viscosity *
-                              viscKernel(kernels, smoothingRadius, dist) *
-                              velocityAlongDir / neighborDensity));
+    vec2 velocityDiff = velocities[neighborIdx] - velocities[i];
+    float velocityAlongDir = Vector2DotProduct(velocityDiff, dir);
+    viscosityForce =
+        viscosityForce +
+        Vector2Scale(velocityDiff,
+                     params.mass * params.viscosity *
+                         viscKernel(kernels, smoothingRadius + EPS, dist) /
+                         neighborDensity);
   }
+  // std::cout << pressureForce.x << pressureForce.y << std::endl;
   return Forces{tensionForce, pressureForce, viscosityForce};
 }
 

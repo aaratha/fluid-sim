@@ -53,15 +53,12 @@ public:
 
   std::vector<int> getNeighbors(size_t index);
   void initializeCache(size_t particleCount);
-  vec2 g = vec2(0, 1000);
   void update(float dt, Parameters params);
   void updateColor(size_t index, Parameters params);
   void applyCollisions(size_t i, Parameters params);
   void applyForces(size_t index, vec2 force, Parameters params);
   float calculateDensity(size_t i, Parameters params,
                          const std::vector<int> &neighbors);
-  float calculateNearDensity(size_t i, Parameters params,
-                             const std::vector<int> &neighbors);
   Forces calculateForces(size_t i, Parameters params,
                          const std::vector<int> &neighbors);
 
