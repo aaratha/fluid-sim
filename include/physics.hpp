@@ -29,6 +29,7 @@ struct Forces {
   vec2 tension;
   vec2 pressure;
   vec2 viscosity;
+  vec2 mouse;
 };
 
 class Solver {

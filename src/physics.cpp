@@ -49,8 +49,9 @@ void Solver::update(float dt, Parameters params) {
     Forces forces = calculateForces(i, params, neighborLists[i]);
 
     // Apply pressure acceleration
-    vec2 acc = (forces.pressure + forces.tension + forces.viscosity) /
-               densities[i]; // / std::max(densities[i], 1e-6f);
+    vec2 acc =
+        (forces.pressure + forces.tension + forces.viscosity + forces.mouse) /
+        densities[i]; // / std::max(densities[i], 1e-6f);
     float acc_limit = params.maxAcceleration;
     float acc_mag = Vector2Length(acc);
     if (acc_mag > acc_limit * acc_limit) {
@@ -149,6 +150,7 @@ Forces Solver::calculateForces(size_t i, Parameters params,
   vec2 tensionForce = {0.0f, 0.0f};
   vec2 pressureForce = {0.0f, 0.0f};
   vec2 viscosityForce = {0.0f, 0.0f};
+  vec2 mouseForce = {0.0f, 0.0f};
 
   const vec2 &targetPos = predictedPositions[i];
   const float targetDensity = densities[i];
@@ -191,9 +193,20 @@ Forces Solver::calculateForces(size_t i, Parameters params,
                      params.mass * params.viscosity *
                          viscKernel(kernels, smoothingRadius + EPS, dist) /
                          neighborDensity);
+
+    if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
+      vec2 mousePos = GetMousePosition();
+      vec2 mouseDir = Vector2Subtract(mousePos, targetPos);
+      float mouseDist = std::max(Vector2Length(mouseDir), 1e-3f);
+      if (mouseDist < params.mouseRadius) {
+        mouseForce =
+            Vector2Add(mouseForce, Vector2Scale(Vector2Normalize(mouseDir),
+                                                params.mouseStrength));
+      }
+    }
   }
   // std::cout << pressureForce.x << pressureForce.y << std::endl;
-  return Forces{tensionForce, pressureForce, viscosityForce};
+  return Forces{tensionForce, pressureForce, viscosityForce, mouseForce};
 }
 
 float Solver::calculateSharedPressure(float densityA, float densityB,

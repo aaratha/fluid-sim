@@ -1,4 +1,5 @@
 #include <iostream>
+#include <raylib.h>
 #include <string>
 #include <vector>
 
@@ -15,15 +16,17 @@ Parameters params = {.screenWidth = 1280,
                      .collisionDamping = 0.95f,
                      .friction = 1.0f,
                      .gravity = 0.0,
-                     .smoothingMultiplier = 13.0f,
+                     .smoothingMultiplier = 9.0f,
                      .substeps = 8,
                      .targetDensity = 2.0f,
-                     .pressureMultiplier = 100000.0f,
+                     .pressureMultiplier = 1000000.0f,
                      .maxVelocity = 400.0f,
                      .nearPressureMultiplier = 300.0,
                      .viscosity = 50.0,
                      .maxAcceleration = 200.0f,
-                     .mass = 100000.0f};
+                     .mass = 100000.0f,
+                     .mouseRadius = 100.0,
+                     .mouseStrength = 5000.0};
 
 int main(void) {
   // Initialization
@@ -96,6 +99,8 @@ int main(void) {
                params.smoothingMultiplier * params.particleRadius,
                (Color){0, 255, 0, 100});
 
+    DrawCircleLines(GetMouseX(), GetMouseY(), params.mouseRadius, GREEN);
+
     DrawFPS(10, 10);
 
     std::string smoothingToString =
@@ -108,7 +113,7 @@ int main(void) {
         "pressure multiplier: " + std::to_string(params.pressureMultiplier);
     const char *multiplier = multiplierToString.c_str();
     GuiSliderBar((Rectangle){10, 70, 120, 20}, NULL, multiplier,
-                 &params.pressureMultiplier, 0.1, 100000);
+                 &params.pressureMultiplier, 0.1, 1000000);
 
     std::string accelerationToString =
         "max acceleration" + std::to_string(params.maxAcceleration);
@@ -120,7 +125,7 @@ int main(void) {
         "target density: " + std::to_string(params.targetDensity);
     const char *density = densityToString.c_str();
     GuiSliderBar((Rectangle){10, 130, 120, 20}, NULL, density,
-                 &params.targetDensity, 0.0, 10);
+                 &params.targetDensity, 0.0, 50);
 
     std::string radiusToString =
         "radius: " + std::to_string(params.particleRadius);

@@ -28,6 +28,8 @@ struct Parameters {
   float viscosity;
   float maxAcceleration;
   float mass;
+  float mouseRadius;
+  float mouseStrength;
 };
 
 // Precompute kernel coefficients during initialization
