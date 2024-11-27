@@ -9,6 +9,8 @@ Kernels precomputeKernels(float radius) {
   Kernels kernels;
   kernels.poly6 = 315 / (64 * PI * pow(radius, 9));
   kernels.spike = -45 / (PI * pow(radius, 6));
+  kernels.spikePow3 = 45 / (PI * pow(radius, 6));
+  kernels.spikePow3Grad = 135 / (PI * pow(radius, 6));
   kernels.visc = 45 / (PI * pow(radius, 5));
   return kernels;
 }
@@ -18,6 +20,20 @@ float poly6Kernel(Kernels &kernels, float radius, float dist) {
     return 0;
   float diff = radius * radius - dist * dist;
   return kernels.poly6 * diff * diff * diff;
+}
+
+float spikePow3Kernel(Kernels &kernels, float radius, float dist) {
+  if (dist <= 0 || dist >= radius)
+    return 0;
+  float diff = radius - dist;
+  return kernels.spikePow3 * diff * diff * diff;
+}
+
+float spikePow3GradKernel(Kernels &kernels, float radius, float dist) {
+  if (dist <= 0 || dist >= radius)
+    return 0;
+  float diff = radius - dist;
+  return -kernels.spikePow3Grad * diff * diff;
 }
 
 float spikeGradKernel(Kernels &kernels, float radius, float dist) {
@@ -31,14 +47,6 @@ float viscKernel(Kernels &kernels, float radius, float dist) {
   if (dist <= 0 || dist >= radius)
     return 0;
   return kernels.visc * (radius - dist);
-}
-
-float nearSmoothingKernel(float radius, float dist) {
-  if (0 >= dist || dist >= radius)
-    return 0;
-
-  // Spiky kernel with more balanced short-range behavior
-  return -45 / (PI * pow(radius, 6));
 }
 
 float densityToPressure(float density, Parameters params) {

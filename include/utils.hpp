@@ -36,6 +36,8 @@ struct Parameters {
 struct Kernels {
   float poly6;
   float spike;
+  float spikePow3;
+  float spikePow3Grad;
   float visc;
 };
 
@@ -45,7 +47,8 @@ vec2 lerp2D(vec2 a, vec2 b, float t);
 float lerp1D(float a, float b, float t);
 
 float poly6Kernel(Kernels &kernels, float radius, float dist);
-float nearSmoothingKernel(float radius, float dist);
+float spikePow3Kernel(Kernels &kernels, float radius, float dist);
+float spikePow3GradKernel(Kernels &kernels, float radius, float dist);
 float spikeGradKernel(Kernels &kernels, float radius, float dist);
 float viscKernel(Kernels &kernels, float radius, float dist);
 float densityToPressure(float density, Parameters params);

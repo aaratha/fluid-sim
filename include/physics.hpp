@@ -58,13 +58,10 @@ public:
   void updateColor(size_t index, Parameters params);
   void applyCollisions(size_t i, Parameters params);
   void applyForces(size_t index, vec2 force, Parameters params);
-  float calculateDensity(size_t i, Parameters params,
-                         const std::vector<int> &neighbors);
+  std::pair<float, float> calculateDensity(size_t i, Parameters params,
+                                           const std::vector<int> &neighbors);
   Forces calculateForces(size_t i, Parameters params,
                          const std::vector<int> &neighbors);
-
-  float calculateSharedPressure(float densityA, float densityB,
-                                Parameters params);
   void precomputeInteractions(Parameters params);
   ~Solver();
 };

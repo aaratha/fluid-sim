@@ -40,7 +40,10 @@ void Solver::update(float dt, Parameters params) {
 // Step 2: Calculate densities
 #pragma omp parallel for schedule(dynamic)
   for (size_t i = 0; i < positions.size(); ++i) {
-    densities[i] = calculateDensity(i, params, neighborLists[i]);
+    std::pair<float, float> density_pair =
+        calculateDensity(i, params, neighborLists[i]);
+    densities[i] = density_pair.first;
+    nearDensities[i] = density_pair.second;
   }
 
 // Step 3: Calculate and apply forces
@@ -120,9 +123,11 @@ void Solver::applyCollisions(size_t i, Parameters params) {
   }
 }
 
-float Solver::calculateDensity(size_t i, Parameters params,
-                               const std::vector<int> &neighbors) {
+std::pair<float, float>
+Solver::calculateDensity(size_t i, Parameters params,
+                         const std::vector<int> &neighbors) {
   float density = 0.0f;
+  float nearDensity = 0.0f;
   const vec2 &targetPos = predictedPositions[i];
 
 #pragma omp parallel for reduction(+ : density)
@@ -136,12 +141,16 @@ float Solver::calculateDensity(size_t i, Parameters params,
     if (dist >= smoothingRadius)
       continue;
 
-    density += params.mass * poly6Kernel(kernels, smoothingRadius + EPS, dist);
+    density += params.mass * poly6Kernel(kernels, smoothingRadius, dist);
+    nearDensity +=
+        params.mass * spikePow3Kernel(kernels, smoothingRadius, dist);
   }
 
   // std::cout << density << std::endl;
   //     return fmax(density, params.targetDensity);
-  return Clamp(density, 1.0e-15, 100.0);
+  return std::pair<float, float>(Clamp(density, 1.0e-15, 100.0),
+                                 Clamp(nearDensity, 1.0e-15, 100.0));
+
   // return std::max(density, params.targetDensity);
 }
 
@@ -149,6 +158,7 @@ Forces Solver::calculateForces(size_t i, Parameters params,
                                const std::vector<int> &neighbors) {
   vec2 tensionForce = {0.0f, 0.0f};
   vec2 pressureForce = {0.0f, 0.0f};
+  vec2 nearPressureForce = {0.0f, 0.0f};
   vec2 viscosityForce = {0.0f, 0.0f};
   vec2 mouseForce = {0.0f, 0.0f};
 
@@ -175,15 +185,26 @@ Forces Solver::calculateForces(size_t i, Parameters params,
       dir = Vector2Scale(offset, (1.0f / dist));
     }
 
-    float slope = spikeGradKernel(kernels, smoothingRadius + EPS, dist);
+    float slope = spikeGradKernel(kernels, smoothingRadius, dist);
+    float nearSlope = spikePow3GradKernel(kernels, smoothingRadius, dist);
     float neighborDensity = std::max(densities[neighborIdx], 1e-6f);
 
-    float sharedPressure =
-        calculateSharedPressure(targetDensity, neighborDensity, params);
+    float pressure = densityToPressure(targetDensity, params);
+    float neighborPressure = densityToPressure(neighborDensity, params);
+    float nearPressure = nearDensityToNearPressure(nearDensities[i], params);
+    float nearNeighborPressure =
+        nearDensityToNearPressure(nearDensities[neighborIdx], params);
+
+    float sharedPressure = (pressure + neighborPressure) * 0.5;
+    float nearSharedPressure = (nearPressure + nearNeighborPressure) * 0.5;
 
     pressureForce =
         pressureForce + Vector2Scale(dir, params.mass * sharedPressure * slope /
                                               neighborDensity);
+    pressureForce =
+        pressureForce +
+        Vector2Scale(dir, params.mass * nearSharedPressure * nearSlope /
+                              nearDensities[neighborIdx]);
 
     vec2 velocityDiff = velocities[neighborIdx] - velocities[i];
     float velocityAlongDir = Vector2DotProduct(velocityDiff, dir);
@@ -191,29 +212,29 @@ Forces Solver::calculateForces(size_t i, Parameters params,
         viscosityForce +
         Vector2Scale(velocityDiff,
                      params.mass * params.viscosity *
-                         viscKernel(kernels, smoothingRadius + EPS, dist) /
+                         viscKernel(kernels, smoothingRadius, dist) /
                          neighborDensity);
 
-    if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
+    if (IsMouseButtonDown(MOUSE_LEFT_BUTTON) ||
+        IsMouseButtonDown(MOUSE_RIGHT_BUTTON)) {
+      float mouseStrength = params.mouseStrength;
+      if (IsMouseButtonDown(MOUSE_RIGHT_BUTTON)) {
+        mouseStrength = -params.mouseStrength;
+      }
       vec2 mousePos = GetMousePosition();
       vec2 mouseDir = Vector2Subtract(mousePos, targetPos);
       float mouseDist = std::max(Vector2Length(mouseDir), 1e-3f);
       if (mouseDist < params.mouseRadius) {
         mouseForce =
-            Vector2Add(mouseForce, Vector2Scale(Vector2Normalize(mouseDir),
-                                                params.mouseStrength));
+            Vector2Add(mouseForce,
+                       Vector2Scale(Vector2Normalize(mouseDir), mouseStrength));
       }
     }
+
+    // Calculate tension force
   }
   // std::cout << pressureForce.x << pressureForce.y << std::endl;
   return Forces{tensionForce, pressureForce, viscosityForce, mouseForce};
-}
-
-float Solver::calculateSharedPressure(float densityA, float densityB,
-                                      Parameters params) {
-  float pressureA = densityToPressure(densityA, params);
-  float pressureB = densityToPressure(densityB, params);
-  return (pressureA + pressureB) / 2;
 }
 
 void Solver::precomputeInteractions(Parameters params) { buildSpatialGrid(); }
@@ -249,7 +270,7 @@ void Solver::buildSpatialGrid() {
 
 std::vector<int> Solver::getNeighbors(size_t index) {
   std::vector<int> neighbors;
-  neighbors.reserve(32); // Typical number of neighbors
+  neighbors.reserve(40); // Typical number of neighbors
 
   const vec2 &pos = predictedPositions[index];
   int cellX = static_cast<int>(pos.x / cellSize);
@@ -277,6 +298,7 @@ Solver::~Solver() {
   spatialGrid.clear();
   interactionCache.clear();
   positions.clear();
+  predictedPositions.clear();
   velocities.clear();
   densities.clear();
   colors.clear();

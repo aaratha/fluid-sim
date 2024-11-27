@@ -13,20 +13,20 @@ Parameters params = {.screenWidth = 1280,
                      .screenHeight = 720,
                      .particleCount = 3000,
                      .particleRadius = 3.0f,
-                     .collisionDamping = 0.95f,
+                     .collisionDamping = 0.5f,
                      .friction = 1.0f,
-                     .gravity = 0.0,
+                     .gravity = 1000.0,
                      .smoothingMultiplier = 9.0f,
                      .substeps = 8,
-                     .targetDensity = 2.0f,
-                     .pressureMultiplier = 1000000.0f,
-                     .maxVelocity = 400.0f,
-                     .nearPressureMultiplier = 300.0,
-                     .viscosity = 50.0,
+                     .targetDensity = 10.0f,
+                     .pressureMultiplier = 800000.0f,
+                     .maxVelocity = 1000.0f,
+                     .nearPressureMultiplier = -40000.0,
+                     .viscosity = 300.0,
                      .maxAcceleration = 200.0f,
                      .mass = 100000.0f,
                      .mouseRadius = 100.0,
-                     .mouseStrength = 5000.0};
+                     .mouseStrength = 10000.0};
 
 int main(void) {
   // Initialization
@@ -113,7 +113,7 @@ int main(void) {
         "pressure multiplier: " + std::to_string(params.pressureMultiplier);
     const char *multiplier = multiplierToString.c_str();
     GuiSliderBar((Rectangle){10, 70, 120, 20}, NULL, multiplier,
-                 &params.pressureMultiplier, 0.1, 1000000);
+                 &params.pressureMultiplier, 0.1, 10000000);
 
     std::string accelerationToString =
         "max acceleration" + std::to_string(params.maxAcceleration);
@@ -143,6 +143,12 @@ int main(void) {
     const char *gravity = gravityToString.c_str();
     GuiSliderBar((Rectangle){10, 220, 120, 20}, NULL, gravity, &params.gravity,
                  -1000, 1000);
+
+    std::string nearPressureToString =
+        "near pressure: " + std::to_string(params.nearPressureMultiplier);
+    const char *nearPressure = nearPressureToString.c_str();
+    GuiSliderBar((Rectangle){10, 250, 120, 20}, NULL, nearPressure,
+                 &params.nearPressureMultiplier, -100000, 100000);
 
     EndDrawing();
   }
