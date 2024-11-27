@@ -8,9 +8,9 @@
 #include "raylib-cpp.hpp"
 #include "utils.hpp"
 
-Parameters params = {.screenWidth = 500,
-                     .screenHeight = 500,
-                     .particleCount = 2000,
+Parameters params = {.screenWidth = 1280,
+                     .screenHeight = 720,
+                     .particleCount = 3000,
                      .particleRadius = 3.0f,
                      .collisionDamping = 0.95f,
                      .friction = 1.0f,

@@ -87,7 +87,7 @@ void Solver::updateColor(size_t index, Parameters params) {
   float velocityMagnitude = Vector2Length(velocities[index]);
   float normalizedVelocity =
       std::min(velocityMagnitude / params.maxVelocity, 1.0f);
-  int colorValue = static_cast<int>(120 + normalizedVelocity * 125);
+  int colorValue = static_cast<int>(55 + normalizedVelocity * 200);
   colorValue = std::clamp(colorValue, 0, 255);
 
   colors[index] = Color{static_cast<unsigned char>(colorValue),
