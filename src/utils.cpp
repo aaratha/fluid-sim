@@ -17,20 +17,20 @@ float poly6Kernel(Kernels &kernels, float radius, float dist) {
   if (dist <= 0 || dist >= radius)
     return 0;
   float diff = radius * radius - dist * dist;
-  return kernels.poly6 * diff * diff * diff * 100000;
+  return kernels.poly6 * diff * diff * diff;
 }
 
 float spikeGradKernel(Kernels &kernels, float radius, float dist) {
   if (dist <= 0 || dist >= radius)
     return 0;
   float diff = radius - dist;
-  return kernels.spike * diff * diff * 100000;
+  return kernels.spike * diff * diff;
 }
 
 float viscKernel(Kernels &kernels, float radius, float dist) {
   if (dist <= 0 || dist >= radius)
     return 0;
-  return kernels.visc * (radius - dist) * 100000;
+  return kernels.visc * (radius - dist);
 }
 
 float nearSmoothingKernel(float radius, float dist) {

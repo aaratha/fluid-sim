@@ -23,7 +23,7 @@ Parameters params = {.screenWidth = 500,
                      .nearPressureMultiplier = 300.0,
                      .viscosity = 50.0,
                      .maxAcceleration = 200.0f,
-                     .mass = 1.0f};
+                     .mass = 100000.0f};
 
 int main(void) {
   // Initialization
