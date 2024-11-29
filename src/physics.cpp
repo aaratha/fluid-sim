@@ -6,10 +6,21 @@
 #include <raylib.h>
 
 const float EPS = 1e-6f;
+const int CIRCLE = 0;
+const int RECTANGLE = 1;
+
+Obstacle::Obstacle(vec2 position, int shape, float radius, Rectangle rectangle)
+    : position(position), shape(shape), radius(radius), rectangle(rectangle) {}
 
 void Solver::initializeCache(size_t particleCount) {
   interactionCache.resize(particleCount,
                           std::vector<float>(particleCount, 0.0f));
+  positions.resize(particleCount);
+  predictedPositions.resize(particleCount);
+  velocities.resize(particleCount, vec2{0.0f, 0.0f});
+  densities.resize(particleCount, 0.0f);
+  nearDensities.resize(particleCount, 0.0f);
+  colors.resize(particleCount);
 }
 
 void Solver::update(float dt, Parameters params) {
@@ -120,6 +131,47 @@ void Solver::applyCollisions(size_t i, Parameters params) {
   } else if (pos.y + radius > params.screenHeight) {
     pos.y = params.screenHeight - radius;
     vel.y *= -bounceFactor;
+  }
+
+  // Handle obstacle collisions
+  for (auto obstacle : obstacles) {
+    if (obstacle.shape == CIRCLE) {
+      vec2 obstaclePos = obstacle.position;
+      float obstacleRadius = obstacle.radius;
+
+      vec2 dir = Vector2Subtract(pos, obstaclePos);
+      float dist = Vector2Length(dir);
+      float overlap = radius + obstacleRadius - dist;
+
+      if (overlap > 0) {
+        vec2 normal = Vector2Normalize(dir);
+        pos = Vector2Add(pos, Vector2Scale(normal, overlap));
+
+        // Reflect velocity
+        float dot = Vector2DotProduct(vel, normal);
+        if (dot < 0) {
+          vel = Vector2Subtract(vel, Vector2Scale(normal, 2.0f * dot));
+        }
+      }
+    } else if (obstacle.shape == RECTANGLE) {
+      Rectangle rect = obstacle.rectangle;
+      vec2 closestPoint = {std::clamp(pos.x, rect.x, rect.x + rect.width),
+                           std::clamp(pos.y, rect.y, rect.y + rect.height)};
+      vec2 dir = Vector2Subtract(pos, closestPoint);
+      float dist = Vector2Length(dir);
+      float overlap = radius - dist;
+
+      if (overlap > 0) {
+        vec2 normal = Vector2Normalize(dir);
+        pos = Vector2Add(pos, Vector2Scale(normal, overlap));
+
+        // Reflect velocity
+        float dot = Vector2DotProduct(vel, normal);
+        if (dot < 0) {
+          vel = Vector2Subtract(vel, Vector2Scale(normal, 2.0f * dot));
+        }
+      }
+    }
   }
 }
 

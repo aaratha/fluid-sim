@@ -105,7 +105,7 @@ endif()
 #     target_link_options(${PROJECT_NAME} PRIVATE -sEXPORTED_FUNCTIONS=['_main','_malloc'] -sEXPORTED_RUNTIME_METHODS=ccall -sUSE_GLFW=3)
 # endif()
 
-if (${PLATFORM} STREQUAL "Web")
+if (NOT PLATFORM STREQUAL "Web")
     # Add this flag to the linker flags when targeting Web
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -sASYNCIFY")
 

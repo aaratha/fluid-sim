@@ -9,24 +9,48 @@
 #include "raylib-cpp.hpp"
 #include "utils.hpp"
 
-Parameters params = {.screenWidth = 1280,
-                     .screenHeight = 720,
-                     .particleCount = 3000,
-                     .particleRadius = 3.0f,
-                     .collisionDamping = 0.5f,
-                     .friction = 1.0f,
-                     .gravity = 1000.0,
-                     .smoothingMultiplier = 9.0f,
-                     .substeps = 8,
-                     .targetDensity = 10.0f,
-                     .pressureMultiplier = 800000.0f,
-                     .maxVelocity = 1000.0f,
-                     .nearPressureMultiplier = -40000.0,
-                     .viscosity = 30.0,
-                     .maxAcceleration = 200.0f,
-                     .mass = 100000.0f,
-                     .mouseRadius = 100.0,
-                     .mouseStrength = 10000.0};
+const int CIRCLE = 0;
+const int RECTANGLE = 1;
+
+Parameters gravParams = {.screenWidth = 1280,
+                         .screenHeight = 720,
+                         .particleCount = 4000,
+                         .particleRadius = 2.0f,
+                         .collisionDamping = 0.5f,
+                         .friction = 1.0f,
+                         .gravity = 1000.0,
+                         .smoothingMultiplier = 9.0f,
+                         .substeps = 8,
+                         .targetDensity = 24.0f,
+                         .pressureMultiplier = 800000.0f,
+                         .maxVelocity = 1000.0f,
+                         .nearPressureMultiplier = -40000.0,
+                         .viscosity = 200.0,
+                         .maxAcceleration = 67.0f,
+                         .mass = 100000.0f,
+                         .mouseRadius = 100.0,
+                         .mouseStrength = 40000.0};
+
+Parameters zeroGravParams = {.screenWidth = 1280,
+                             .screenHeight = 720,
+                             .particleCount = 4000,
+                             .particleRadius = 2.0f,
+                             .collisionDamping = 0.5f,
+                             .friction = 1.0f,
+                             .gravity = 0.0,
+                             .smoothingMultiplier = 12.0f,
+                             .substeps = 8,
+                             .targetDensity = 4.0f,
+                             .pressureMultiplier = 800000.0f,
+                             .maxVelocity = 1000.0f,
+                             .nearPressureMultiplier = -40000.0,
+                             .viscosity = 200.0,
+                             .maxAcceleration = 67.0f,
+                             .mass = 100000.0f,
+                             .mouseRadius = 100.0,
+                             .mouseStrength = 20000.0};
+
+Parameters params = zeroGravParams;
 
 int main(void) {
   // Initialization
@@ -38,12 +62,11 @@ int main(void) {
 
   // Initialize solver and particles
   Solver solver;
-  solver.positions.resize(params.particleCount);
-  solver.predictedPositions.resize(params.particleCount);
-  solver.velocities.resize(params.particleCount, vec2{0.0f, 0.0f});
-  solver.densities.resize(params.particleCount, 0.0f);
-  solver.nearDensities.resize(params.particleCount, 0.0f);
-  solver.colors.resize(params.particleCount);
+  solver.obstacles.push_back(
+      Obstacle(vec2(static_cast<float>(screenWidth) / 2,
+                    static_cast<float>(screenHeight) / 2),
+               CIRCLE, 10.0, Rectangle{}));
+  solver.initializeCache(params.particleCount);
 
   // Initialize particle positions in a grid
   int gridCols = static_cast<int>(sqrt(params.particleCount));
@@ -83,6 +106,7 @@ int main(void) {
     if (!pause) {
       float dt = GetFrameTime();
       solver.update(dt, params);
+      solver.obstacles[0].radius += dt * 10;
     }
 
     // Rendering

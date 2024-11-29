@@ -32,25 +32,35 @@ struct Forces {
   vec2 mouse;
 };
 
+class Obstacle {
+public:
+  Obstacle(vec2 position, int shape, float radius, Rectangle rectangle);
+  vec2 position;
+  int shape;
+  float radius;
+  Rectangle rectangle;
+};
+
 class Solver {
 private:
   std::vector<std::vector<float>> interactionCache; // Pairwise distance cache
   std::unordered_map<GridCell, std::vector<int>> spatialGrid;
+  std::vector<float> densities;
+  std::vector<vec2> velocities;
+  std::vector<float> nearDensities;
+  Kernels kernels;
 
 public:
   float cellSize;
   float smoothingRadius;
   float radius = 10;
-  void buildSpatialGrid();
 
+  std::vector<Obstacle> obstacles;
   std::vector<vec2> positions;
   std::vector<vec2> predictedPositions;
-  std::vector<vec2> velocities;
-  std::vector<float> densities;
-  std::vector<float> nearDensities;
   std::vector<Color> colors;
 
-  Kernels kernels;
+  void buildSpatialGrid();
 
   std::vector<int> getNeighbors(size_t index);
   void initializeCache(size_t particleCount);
