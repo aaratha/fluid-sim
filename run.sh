@@ -1,19 +1,29 @@
 #!/usr/bin/env sh
 
-# Check for the OS type
-
+# Check for the OS type and platform
 if [ "$1" = "web" ]; then
+    echo "Building for Web (Emscripten)..."
     emcmake cmake . -B build-web -DPLATFORM=Web -DCMAKE_BUILD_TYPE=Release
     emmake make -C build-web
-    python -m http.server
+    echo "Starting a local HTTP server for the Web build..."
+    python3 -m http.server --directory build-web
 else
-    if [ "$OSTYPE" = "msys" ] || [ "$OSTYPE" = "win32" ]; then
+    echo "Building for Desktop..."
+    if [ "$(uname)" = "Darwin" ]; then
+        # macOS
+        cmake . -B build -G "Unix Makefiles" -DPLATFORM=Desktop
+    elif [ "$(uname)" = "Linux" ]; then
+        # Linux
+        cmake . -B build -G "Unix Makefiles" -DPLATFORM=Desktop
+    elif echo "$OSTYPE" | grep -q "msys"; then
         # Windows with MinGW
-        cmake . -B build  G "MinGW Makefiles"
+        cmake . -B build -G "MinGW Makefiles" -DPLATFORM=Desktop
     else
-        # Unix-based system (macOS/Linux)
-        cmake . -B build  -G "Unix Makefiles"
+        echo "Unsupported OS: $OSTYPE"
+        exit 1
     fi
+
     cmake --build build
-    build/fluid-sim
+    echo "Running the executable..."
+    ./build/fluid-sim
 fi

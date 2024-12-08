@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.14)
 project(fluid-sim)
+
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -7,6 +8,19 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)  # Change to Debug if needed
+endif()
+
+# Define PLATFORM variable
+if(NOT DEFINED PLATFORM)
+    set(PLATFORM "Desktop")  # Default to Desktop platform
+endif()
+
+# Toolchain setup for Emscripten
+if(PLATFORM STREQUAL "Web")
+    set(CMAKE_TOOLCHAIN_FILE "/opt/homebrew/Cellar/emscripten/3.1.73/libexec/cmake/Modules/Platform/Emscripten.cmake" CACHE STRING "Emscripten toolchain file")
+    message(STATUS "Building for Web using Emscripten")
+else()
+    message(STATUS "Building for Desktop")
 endif()
 
 # raylib
@@ -50,17 +64,18 @@ if (NOT raygui_POPULATED)
     FetchContent_MakeAvailable(raygui)
 endif()
 
-# OpenMP support
-find_package(OpenMP)
-if(OpenMP_CXX_FOUND)
-    target_compile_options(${PROJECT_NAME} PUBLIC ${OpenMP_CXX_FLAGS})
-    target_link_libraries(${PROJECT_NAME} PUBLIC ${OpenMP_CXX_LIBRARIES})
-else()
-    # Explicitly add Homebrew paths for OpenMP
-    message(STATUS "Using OpenMP installed via Homebrew")
-    include_directories(/opt/homebrew/opt/libomp/include)
-    link_directories(/opt/homebrew/opt/libomp/lib)
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -L/opt/homebrew/opt/libomp/lib -lomp")
+# OpenMP support (for non-web builds)
+if(NOT PLATFORM STREQUAL "Web")
+    find_package(OpenMP)
+    if(OpenMP_CXX_FOUND)
+        target_compile_options(${PROJECT_NAME} PUBLIC ${OpenMP_CXX_FLAGS})
+        target_link_libraries(${PROJECT_NAME} PUBLIC ${OpenMP_CXX_LIBRARIES})
+    else()
+        message(STATUS "Using OpenMP installed via Homebrew")
+        include_directories(/opt/homebrew/opt/libomp/include)
+        link_directories(/opt/homebrew/opt/libomp/lib)
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -L/opt/homebrew/opt/libomp/lib -lomp")
+    endif()
 endif()
 
 # Include directories for the project
@@ -83,42 +98,23 @@ add_executable(${PROJECT_NAME} ${SOURCES})
 # Link libraries
 target_link_libraries(${PROJECT_NAME} PUBLIC raylib raylib_cpp)
 
+# Web-specific configurations
+if(PLATFORM STREQUAL "Web")
+    set(CMAKE_EXECUTABLE_SUFFIX ".html")  # Output an HTML file
+    target_link_options(${PROJECT_NAME} PRIVATE
+        "-sEXPORTED_FUNCTIONS=['_main','_malloc']"
+        "-sEXPORTED_RUNTIME_METHODS=ccall"
+        "-sUSE_GLFW=3"
+        "-sASYNCIFY"
+    )
+else()
+    # Desktop-specific configurations
+    if(APPLE)
+        target_link_libraries(${PROJECT_NAME} PUBLIC "-framework Cocoa" "-framework IOKit" "-framework CoreVideo")
+    endif()
+endif()
 
 # Copy resources folder to the build directory
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
     ${CMAKE_SOURCE_DIR}/resources $<TARGET_FILE_DIR:${PROJECT_NAME}>/resources)
-
-
-if(APPLE)
-    target_link_libraries(${PROJECT_NAME} PUBLIC "-framework Cocoa" "-framework IOKit" "-framework CoreVideo")
-endif()
-
-
-#PLATFORM=PLATFORM_WEB make
-# Web Configurations
-# if (${PLATFORM} STREQUAL "Web")
-#     # Tell Emscripten to build an example.html file.
-#     set_target_properties(${PROJECT_NAME} PROPERTIES SUFFIX ".html")
-
-#     # Required linker flags for using Raylib with Emscripten
-#     target_link_options(${PROJECT_NAME} PRIVATE -sEXPORTED_FUNCTIONS=['_main','_malloc'] -sEXPORTED_RUNTIME_METHODS=ccall -sUSE_GLFW=3)
-# endif()
-
-if (NOT PLATFORM STREQUAL "Web")
-    # Add this flag to the linker flags when targeting Web
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -sASYNCIFY")
-
-    # Tell Emscripten to build a .html output
-    set_target_properties(${PROJECT_NAME} PROPERTIES SUFFIX ".html")
-
-    # Required linker flags for using Raylib with Emscripten
-    target_link_options(${PROJECT_NAME} PRIVATE
-        "-sEXPORTED_FUNCTIONS=['_main','_malloc']"
-        "-sEXPORTED_RUNTIME_METHODS=ccall"
-        "-sUSE_GLFW=3"
-    )
-endif()
-
-
-# Finished setup!
