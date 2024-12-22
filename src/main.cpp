@@ -78,7 +78,7 @@ void TestSceneSchedule(std::vector<Obstacle>& obstacles, float dt) {
 void NoObstaclesSchedule(std::vector<Obstacle>& obstacles, float dt) {}
 
 /// Set Obstacles
-std::vector<Obstacle> Obstacles = NoObstacles;
+std::vector<Obstacle> Obstacles = TestSceneObstacles;
 
 int main(void) {
     // Initialization
@@ -134,7 +134,7 @@ int main(void) {
             float dt = GetFrameTime();
             solver.update(dt, params);
             // solver.obstacles[0].radius += dt * 10;
-            // TestSceneSchedule(solver.obstacles, dt);
+            TestSceneSchedule(solver.obstacles, dt);
             NoObstaclesSchedule(solver.obstacles, dt);
         }
 
