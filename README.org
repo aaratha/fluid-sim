@@ -8,11 +8,8 @@
 - [[#conclusion][Conclusion]]
 
 * Introduction
-This project is based on [[https://www.youtube.com/watch?v=rSKMYc1CQHE][Sebastian Lague's "Coding Adventure"]] video.
+This project is loosely based on [[https://www.youtube.com/watch?v=rSKMYc1CQHE][Sebastian Lague's "Coding Adventure"]] and has been developed using C++ and Raylib for basic graphical interfacing.
 
-The video documents his investigation into fluid dynamics, and his following implementation in Unity using C#.
-
-This project has been developed using C++ and Raylib for basic graphical interfacing
 * Methodology
 ** Graphical Interface
 ** Fluid Dynamics
